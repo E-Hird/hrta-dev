@@ -1,20 +1,27 @@
 {
-    "name": "hrta-dev",
-    "main": "src/worker.js",
-    "compatibility_date": "2026-07-22",
-    "observability": {
-        "enabled": false,
-        "head_sampling_rate": 1,
-        "logs": {
-        "enabled": true,
-        "head_sampling_rate": 1,
-        "persist": true,
-        "invocation_logs": true
-        },
-        "traces": {
-        "enabled": false,
-        "persist": true,
-        "head_sampling_rate": 1
-        }
-    }
+	"name": "hrta-dev",
+	"main": "src/worker.js",
+	"compatibility_date": "2026-07-22",
+	"observability": {
+		"enabled": false,
+		"head_sampling_rate": 1,
+		"logs": {
+			"enabled": true,
+			"head_sampling_rate": 1,
+			"persist": true,
+			"invocation_logs": true
+		},
+		"traces": {
+			"enabled": false,
+			"persist": true,
+			"head_sampling_rate": 1
+		}
+	},
+	"kv_namespaces": [
+		{
+			"binding": "TOKEN_KV",
+			"id": "8f3fa439417f427393c46d5756c777fd",
+			"remote": true
+		}
+	]
 }
