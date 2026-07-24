@@ -29,13 +29,13 @@ export default {
 
     switch (url.pathname){
       case "/topechelon/callback":
-        const code = url.searchParams.get("code");
+        const tokenCode = url.searchParams.get("code");
         const res = await fetch("https://bb3api.topechelon.com/top_echelon_provider/oauth/token", {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
           body: new URLSearchParams({
             grant_type: "authorize_token",
-            code: code,
+            code: tokenCode,
             client_id: env.CLIENT_ID,
             client_secret: env.CLIENT_SECRET,
             redirect_uri: env.REDIRECT_URI,
