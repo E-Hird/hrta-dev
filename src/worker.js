@@ -34,7 +34,7 @@ export default {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
           body: new URLSearchParams({
-            grant_type: "refresh_token",
+            grant_type: "authorize_token",
             code: code,
             client_id: env.CLIENT_ID,
             client_secret: env.CLIENT_SECRET,
@@ -43,7 +43,7 @@ export default {
         })
         const newTokens = await res.json();
         await env.TOKEN_KV.put(`tokens:${userId}`, JSON.stringify(newTokens))
-        break;
+        return new Response("Response", { status: res.status })
 
       case "/fractional":
         if (request.method !== "POST") {
