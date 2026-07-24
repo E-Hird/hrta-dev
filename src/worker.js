@@ -34,7 +34,7 @@ export default {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
           body: new URLSearchParams({
-            grant_type: "authorize_token",
+            grant_type: "authorization_code",
             code: tokenCode,
             client_id: env.CLIENT_ID,
             client_secret: env.CLIENT_SECRET,
