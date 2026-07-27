@@ -27,6 +27,16 @@ export default {
     const url = new URL(request.url);
     const userId = env.USER_ID
 
+    if (request.method === "OPTIONS") {
+      return new Response(null, {
+        headers: {
+          "Access-Control-Allow-Origin": "https://your-website.com",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        },
+      });
+    }
+
     switch (url.pathname){
       case "/topechelon/callback":
         const tokenCode = url.searchParams.get("code");
