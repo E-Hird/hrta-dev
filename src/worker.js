@@ -1,7 +1,12 @@
+// function isExpired(tokens){
+
+// }
+
 async function getValidAccessToken(env, userId) {
   const tokens = await env.TOKEN_KV.get(`tokens:${userId}`, "json")
 
   if (isExpired(tokens)) {
+    console.log("Token is expired")
     const resAuthToken = await fetch("https://bb3api.topechelon.com/top_echelon_provider/oauth/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -73,12 +78,12 @@ export default {
         console.log("Getting access token...")
         const accessToken = getValidAccessToken(env, userId);
         console.log(`Access token: ${accessToken}`)
+        console.log(`Authorization: Bearer ${accessToken}`.length, JSON.stringify(accessToken));
         console.log("Getting search results...")
         const resSearchResult = await fetch("https://bb3api.topechelon.com/public/v1/quick_find/search?type=person&term=Cheryl", {
           method: "GET",
           headers: {
             "Authorization": `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
           }
         })
 
