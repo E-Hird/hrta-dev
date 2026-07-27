@@ -81,7 +81,7 @@ export default {
         console.log(formData);
 
         console.log("Getting access token...")
-        const accessToken = getValidAccessToken(env, userId);
+        const accessToken = await getValidAccessToken(env, userId);
         console.log(`Access token: ${accessToken}`)
         console.log(`Authorization: Bearer ${accessToken.length}, ${JSON.stringify(accessToken)}`);
         console.log("Getting search results...")
