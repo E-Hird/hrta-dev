@@ -2,7 +2,7 @@ async function getValidAccessToken(env, userId) {
   const tokens = await env.TOKEN_KV.get(`tokens:${userId}`, "json")
 
   if (isExpired(tokens)) {
-    const res = await fetch("https://bb3api.topechelon.com/top_echelon_provider/oauth/token", {
+    const resAuthToken = await fetch("https://bb3api.topechelon.com/top_echelon_provider/oauth/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
@@ -13,7 +13,7 @@ async function getValidAccessToken(env, userId) {
         redirect_uri: env.REDIRECT_URI,
       }),
     });
-    const newTokens = await res.json();
+    const newTokens = await resAuthToken.json();
     await env.TOKEN_KV.put(`tokens:${userId}`, JSON.stringify(newTokens));
     return newTokens.access_token;
   }
@@ -30,7 +30,7 @@ export default {
     switch (url.pathname){
       case "/topechelon/callback":
         const tokenCode = url.searchParams.get("code");
-        const res = await fetch("https://bb3api.topechelon.com/top_echelon_provider/oauth/token", {
+        const resAuthToken = await fetch("https://bb3api.topechelon.com/top_echelon_provider/oauth/token", {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
           body: new URLSearchParams({
@@ -41,9 +41,9 @@ export default {
             redirect_uri: env.REDIRECT_URI,
           }),
         })
-        const newTokens = await res.json();
+        const newTokens = await resAuthToken.json();
         await env.TOKEN_KV.put(`tokens:${userId}`, JSON.stringify(newTokens))
-        return new Response(`Response: ${res.status}`, { status: res.status })
+        return new Response(`Response: ${resAuthToken.status}`, { status: resAuthToken.status })
 
       case "/fractional":
         if (request.method !== "POST") {
@@ -60,7 +60,7 @@ export default {
         console.log(formData);
 
         const accessToken = getValidAccessToken(env, userId);
-        const res = await fetch("https://bb3api.topechelon.com/public/v1/quick_find/search", {
+        const resSearchResult = await fetch("https://bb3api.topechelon.com/public/v1/quick_find/search", {
           method: "GET",
           headers: { 
             "Authorization": `Bearer ${accessToken}`,
@@ -72,8 +72,9 @@ export default {
           })
         })
 
-        console.log(`${res.status}: ${res.statusText}`)
-        await env.TOKEN_KV.put(`res:Cheryl`, JSON.stringify(newTokens));
+        console.log(`${resSearchResult.status}: ${resSearchResult.statusText}`)
+        const searchResult = await resSearchResult.json();
+        await env.TOKEN_KV.put(`res:Cheryl`, JSON.stringify(searchResult));
 
         // const res = await fetch("/public/v1/people", {
         //   method: "POST",
