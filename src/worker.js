@@ -56,6 +56,7 @@ export default {
         return new Response(`Response: ${resAuthToken.status}`, { status: resAuthToken.status })
 
       case "/fractional":
+        console.log("Got fractional request.")
         if (request.method !== "POST") {
           return new Response("Method not allowed", { status: 405 });
         }
@@ -70,16 +71,15 @@ export default {
         console.log(formData);
 
         const accessToken = getValidAccessToken(env, userId);
-        const resSearchResult = await fetch("https://bb3api.topechelon.com/public/v1/quick_find/search", {
+        const resSearchResult = await fetch("https://bb3api.topechelon.com/public/v1/quick_find/search?type=person&term=Cheryl", {
           method: "GET",
           headers: { 
             "Authorization": `Bearer ${accessToken}`,
-            "Content-Type": "application/json"
-          },
-          body: new URLSearchParams({
-            type: "person",
-            term: "Cheryl"
-          })
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "https://hrtalentalliance.com",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization",
+          }
         })
 
         console.log(`${resSearchResult.status}: ${resSearchResult.statusText}`)
