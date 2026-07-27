@@ -43,7 +43,7 @@ export default {
         })
         const newTokens = await res.json();
         await env.TOKEN_KV.put(`tokens:${userId}`, JSON.stringify(newTokens))
-        return new Response("Response", { status: res.status })
+        return new Response(`Response: ${res.status}`, { status: res.status })
 
       case "/fractional":
         if (request.method !== "POST") {
@@ -58,6 +58,40 @@ export default {
         const formData = await request.json();
 
         console.log(formData);
+
+        const accessToken = getValidAccessToken(env, userId);
+        const res = await fetch("https://bb3api.topechelon.com/public/v1/quick_find/search", {
+          method: "GET",
+          headers: { 
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json"
+          },
+          body: new URLSearchParams({
+            type: "person",
+            term: "Cheryl"
+          })
+        })
+
+        console.log(`${res.status}: ${res.statusText}`)
+        await env.TOKEN_KV.put(`res:Cheryl`, JSON.stringify(newTokens));
+
+        // const res = await fetch("/public/v1/people", {
+        //   method: "POST",
+        //   headers: { 
+        //     "Authorization": `Bearer ${accessToken}`,
+        //     "Content-Type": "application/json"
+        //   },
+        //   body: {
+        //     "person": {
+        //       "first_name": "Euan",
+        //       "last_name": "Hird",
+        //       "middle_initial": "j q",
+        //       "nick_name": "Euan",
+        //       "status": "active",
+        //       "suffix": "MEng"
+        //     }
+        //   }
+        // })
 
         return new Response("Ok", { status: 200 });
       
