@@ -1,6 +1,11 @@
-// function isExpired(tokens){
-
-// }
+function isExpired(tokens){
+  const time = Date.now() / 1000;
+  if ((time - tokens["created_at"]) > tokens["expires_in"]){
+    return true;
+  } else {
+    return false;
+  }
+}
 
 async function getValidAccessToken(env, userId) {
   const tokens = await env.TOKEN_KV.get(`tokens:${userId}`, "json")
@@ -78,7 +83,7 @@ export default {
         console.log("Getting access token...")
         const accessToken = getValidAccessToken(env, userId);
         console.log(`Access token: ${accessToken}`)
-        console.log(`Authorization: Bearer ${accessToken}`.length, JSON.stringify(accessToken));
+        console.log(`Authorization: Bearer ${accessToken.length}, ${JSON.stringify(accessToken)}`);
         console.log("Getting search results...")
         const resSearchResult = await fetch("https://bb3api.topechelon.com/public/v1/quick_find/search?type=person&term=Cheryl", {
           method: "GET",
