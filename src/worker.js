@@ -70,15 +70,15 @@ export default {
 
         console.log(formData);
 
+        console.log("Getting access token...")
         const accessToken = getValidAccessToken(env, userId);
+        console.log(`Access token: ${accessToken}`)
+        console.log("Getting search results...")
         const resSearchResult = await fetch("https://bb3api.topechelon.com/public/v1/quick_find/search?type=person&term=Cheryl", {
           method: "GET",
-          headers: { 
+          headers: {
             "Authorization": `Bearer ${accessToken}`,
             "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "https://hrtalentalliance.com",
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type, Authorization",
           }
         })
 
