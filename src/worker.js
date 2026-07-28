@@ -94,7 +94,7 @@ export default {
         // console.log(`${resSearchResult.status}: ${resSearchResult.statusText}`)
         // const searchResult = await resSearchResult.json();
         // await env.TOKEN_KV.put(`res:Cheryl`, JSON.stringify(searchResult));
-
+        console.log("Creating new person record...")
         const resCreatePerson = await fetch("https://bb3api.topechelon.com/public/v1/people", {
           method: "POST",
           headers: { 
@@ -119,6 +119,7 @@ export default {
           }
         })
 
+        console.log(`Status: ${resCreatePerson.status} ${resCreatePerson.statusText}`)
         const personRecord = await resCreatePerson.json();
         console.log(`New person created with ID: ${personRecord["id"]}`)
         console.log(personRecord)
