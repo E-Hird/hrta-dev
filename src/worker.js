@@ -95,7 +95,7 @@ export default {
         // const searchResult = await resSearchResult.json();
         // await env.TOKEN_KV.put(`res:Cheryl`, JSON.stringify(searchResult));
 
-        const resCreatePerson = await fetch("/public/v1/people", {
+        const resCreatePerson = await fetch("https://bb3api.topechelon.com/public/v1/people", {
           method: "POST",
           headers: { 
             "Authorization": `Bearer ${accessToken}`,
