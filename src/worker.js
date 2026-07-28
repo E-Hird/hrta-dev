@@ -105,7 +105,7 @@ export default {
             "person": {
               "first_name": "Euan",
               "last_name": "Hird",
-              "middle_initial": "j q",
+              "middle_initial": "j",
               "nick_name": "Euan",
               "status": "active",
               "suffix": "MEng",
@@ -123,7 +123,7 @@ export default {
         const personRecord = await resCreatePerson.json();
         console.log(`New person created with ID: ${personRecord["id"]}`)
         console.log(personRecord)
-        await env.TOKEN_KV.put(`personRecord:${formData["fname"]}${formData["lname"]}`, JSON.stringify(searchResult));
+        await env.TOKEN_KV.put(`personRecord:${formData["fname"]}${formData["lname"]}`, JSON.stringify(personRecord));
 
         return new Response("Ok", { status: 200 });
       
