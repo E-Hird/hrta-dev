@@ -101,7 +101,7 @@ export default {
             "Authorization": `Bearer ${accessToken}`,
             "Content-Type": "application/json"
           },
-          body: {
+          body: JSON.stringify({
             "person": {
               "first_name": "Euan",
               "last_name": "Hird",
@@ -116,7 +116,7 @@ export default {
               "zip": "W1D 1BS",
               "country": "United Kingdom",
             }
-          }
+          })  
         })
 
         console.log(`Status: ${resCreatePerson.status} ${resCreatePerson.statusText}`)
