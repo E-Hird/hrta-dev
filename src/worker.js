@@ -83,36 +83,46 @@ export default {
         console.log("Getting access token...")
         const accessToken = await getValidAccessToken(env, userId);
         console.log(`Access token: ${accessToken}`)
-        console.log(`Authorization: Bearer ${accessToken.length}, ${JSON.stringify(accessToken)}`);
-        console.log("Getting search results...")
-        const resSearchResult = await fetch("https://bb3api.topechelon.com/public/v1/quick_find/search?type=person&term=Cheryl", {
-          method: "GET",
-          headers: {
+        // console.log("Getting search results...")
+        // const resSearchResult = await fetch("https://bb3api.topechelon.com/public/v1/quick_find/search?type=person&term=Cheryl", {
+        //   method: "GET",
+        //   headers: {
+        //     "Authorization": `Bearer ${accessToken}`,
+        //   }
+        // })
+
+        // console.log(`${resSearchResult.status}: ${resSearchResult.statusText}`)
+        // const searchResult = await resSearchResult.json();
+        // await env.TOKEN_KV.put(`res:Cheryl`, JSON.stringify(searchResult));
+
+        const resCreatePerson = await fetch("/public/v1/people", {
+          method: "POST",
+          headers: { 
             "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json"
+          },
+          body: {
+            "person": {
+              "first_name": "Euan",
+              "last_name": "Hird",
+              "middle_initial": "j q",
+              "nick_name": "Euan",
+              "status": "active",
+              "suffix": "MEng",
+              "street_address": "Oxford Street",
+              "street_address_two": "string",
+              "city": "London",
+              "state": "",
+              "zip": "W1D 1BS",
+              "country": "United Kingdom",
+            }
           }
         })
 
-        console.log(`${resSearchResult.status}: ${resSearchResult.statusText}`)
-        const searchResult = await resSearchResult.json();
-        await env.TOKEN_KV.put(`res:Cheryl`, JSON.stringify(searchResult));
-
-        // const res = await fetch("/public/v1/people", {
-        //   method: "POST",
-        //   headers: { 
-        //     "Authorization": `Bearer ${accessToken}`,
-        //     "Content-Type": "application/json"
-        //   },
-        //   body: {
-        //     "person": {
-        //       "first_name": "Euan",
-        //       "last_name": "Hird",
-        //       "middle_initial": "j q",
-        //       "nick_name": "Euan",
-        //       "status": "active",
-        //       "suffix": "MEng"
-        //     }
-        //   }
-        // })
+        const personRecord = await resCreatePerson.json();
+        console.log(`New person created with ID: ${personRecord["id"]}`)
+        console.log(personRecord)
+        await env.TOKEN_KV.put(`personRecord:${formData["fname"]}${formData["lname"]}`, JSON.stringify(searchResult));
 
         return new Response("Ok", { status: 200 });
       
