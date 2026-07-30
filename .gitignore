@@ -1,5 +1,5 @@
 .gitignore
 node_modules
 .wrangler
-.eslintrc.json
+eslint.config.mjs
 .dev.vars

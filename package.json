@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "eslint src/worker.js --fix"
+    "lint": "npx eslint src/worker.js --fix"
   },
   "repository": {
     "type": "git",
@@ -23,7 +23,8 @@
   },
   "homepage": "https://github.com/E-Hird/hrta-dev#readme",
   "devDependencies": {
-    "eslint": "^10.7.0",
+    "@eslint/js": "^10.0.1",
+    "globals": "^17.8.0",
     "wrangler": "^4.113.0"
   }
 }
