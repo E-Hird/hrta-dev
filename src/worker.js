@@ -47,68 +47,80 @@ export default {
       });
     }
 
-    switch (url.pathname){
-      case "/topechelon/callback":
-        const tokenCode = url.searchParams.get("code");
-        const resAuthToken = await fetch("https://bb3api.topechelon.com/top_echelon_provider/oauth/token", {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: new URLSearchParams({
-            grant_type: "authorization_code",
-            code: tokenCode,
-            client_id: env.CLIENT_ID,
-            client_secret: env.CLIENT_SECRET,
-            redirect_uri: env.REDIRECT_URI,
-          }),
-        })
-        const newTokens = await resAuthToken.json();
-        await env.TOKEN_KV.put(`tokens:${userId}`, JSON.stringify(newTokens))
-        return new Response(`Response: ${resAuthToken.status}`, { status: resAuthToken.status })
+    try {
+      switch (url.pathname){
+        case "/topechelon/callback":
+          const tokenCode = url.searchParams.get("code");
+          const resAuthToken = await fetch("https://bb3api.topechelon.com/top_echelon_provider/oauth/token", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({
+              grant_type: "authorization_code",
+              code: tokenCode,
+              client_id: env.CLIENT_ID,
+              client_secret: env.CLIENT_SECRET,
+              redirect_uri: env.REDIRECT_URI,
+            }),
+          })
+          const newTokens = await resAuthToken.json();
+          await env.TOKEN_KV.put(`tokens:${userId}`, JSON.stringify(newTokens))
+          return new Response(`Response: ${resAuthToken.status}`, { status: resAuthToken.status })
 
-      case "/fractional":
-        console.log("Got fractional request.")
-        if (request.method !== "POST") {
-          return new Response("Method not allowed", { status: 405 });
-        }
+        case "/fractional":
+          console.log("Got fractional request.")
+          if (request.method !== "POST") {
+            return new Response("Method not allowed", { status: 405 });
+          }
 
-        const origin = request.headers.get("Origin");
-        if (origin !== "https://www.hrtalentalliance.com") {
-          return new Response("Forbidden", { status : 403 });
-        }
+          const origin = request.headers.get("Origin");
+          if (origin !== "https://www.hrtalentalliance.com") {
+            return new Response("Forbidden", { status : 403 });
+          }
 
-        const formData = await request.formData();
+          const formData = await request.formData();
+          const data = new Object.fromEntries(formData)
+          console.log(data);
 
-        console.log(formData);
+          console.log("Getting access token...")
+          const accessToken = await getValidAccessToken(env, userId);
+          console.log(`Access token: ${accessToken}`)
+          console.log("Creating new person record from resume...")
+          const resCreatePerson = await fetch("https://bb3api.topechelon.com/public/v1/people/parse", {
+            method: "POST",
+            headers: { 
+              "Authorization": `Bearer ${accessToken}`,
+            },
+            body: data["resume"]
+          })
 
-        console.log("Getting access token...")
-        const accessToken = await getValidAccessToken(env, userId);
-        console.log(`Access token: ${accessToken}`)
-        console.log("Creating new person record from resume...")
-        const resCreatePerson = await fetch("https://bb3api.topechelon.com/public/v1/people/parse", {
-          method: "POST",
-          headers: { 
-            "Authorization": `Bearer ${accessToken}`,
-          },
-          body: formData["resume"]
-        })
+          console.log(`Status: ${resCreatePerson.status} ${resCreatePerson.statusText}`)
+          const personRecord = await resCreatePerson.json();
+          console.log(`New person created with ID: ${personRecord["person"]["id"]}`)
+          console.log(personRecord)
+          await env.TOKEN_KV.put(`personRecord:${data["fname"]}${data["lname"]}`, JSON.stringify(personRecord));
 
-        console.log(`Status: ${resCreatePerson.status} ${resCreatePerson.statusText}`)
-        const personRecord = await resCreatePerson.json();
-        console.log(`New person created with ID: ${personRecord["person"]["id"]}`)
-        console.log(personRecord)
-        await env.TOKEN_KV.put(`personRecord:${formData["fname"]}${formData["lname"]}`, JSON.stringify(personRecord));
-
-        return new Response("Ok", { 
-          status: 200,
-          headers: {
-            "Access-Control-Allow-Origin": "https://www.hrtalentalliance.com",
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type, Authorization",
-          },
-         });
-      
-      default:
-        return new Response("Page not found", { status: 400 })
+          return new Response("Ok", { 
+            status: 200,
+            headers: {
+              "Access-Control-Allow-Origin": "https://www.hrtalentalliance.com",
+              "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+              "Access-Control-Allow-Headers": "Content-Type, Authorization",
+            },
+          });
+        
+        default:
+          return new Response("Page not found", { status: 400 })
+      }
+    } catch (error) {
+      console.error(`Server Error: ${error}`)
+      return new Response("Server Error", {
+        status: 500,
+        headers: {
+          "Access-Control-Allow-Origin": "https://www.hrtalentalliance.com",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        },
+      })
     }
   }
 };
