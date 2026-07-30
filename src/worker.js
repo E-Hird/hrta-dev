@@ -78,7 +78,7 @@ export default {
           }
 
           const formData = await request.formData();
-          const data = new Object.fromEntries(formData)
+          const data = Object.fromEntries(formData)
           console.log(data);
 
           console.log("Getting access token...")
