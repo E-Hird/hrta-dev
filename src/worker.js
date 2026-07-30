@@ -90,7 +90,9 @@ export default {
           console.log("Creating new person record from resume...")
           const resCreatePerson = await fetch("https://bb3api.topechelon.com/public/v1/people/parse", {
             method: "POST",
-            headers: { 
+            headers: {
+              "Accept": "*/*",
+              "Content-Type": "file",
               "Authorization": `Bearer ${accessToken}`,
             },
             body: resumeFile
