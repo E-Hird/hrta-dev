@@ -121,11 +121,18 @@ export default {
 
         console.log(`Status: ${resCreatePerson.status} ${resCreatePerson.statusText}`)
         const personRecord = await resCreatePerson.json();
-        console.log(`New person created with ID: ${personRecord["id"]}`)
+        console.log(`New person created with ID: ${personRecord["person"]["id"]}`)
         console.log(personRecord)
         await env.TOKEN_KV.put(`personRecord:${formData["fname"]}${formData["lname"]}`, JSON.stringify(personRecord));
 
-        return new Response("Ok", { status: 200 });
+        return new Response("Ok", { 
+          status: 200,
+          headers: {
+            "Access-Control-Allow-Origin": "https://hrtalentalliance.com",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization",
+          },
+         });
       
       default:
         return new Response("Page not found", { status: 400 })
