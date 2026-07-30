@@ -78,8 +78,11 @@ export default {
           }
 
           const formData = await request.formData();
+          const resumeFile = formData.get("resume")
           const data = Object.fromEntries(formData)
           console.log(data);
+          console.log("File name:", resumeFile?.name);
+          console.log("File type:", resumeFile?.type);
 
           console.log("Getting access token...")
           const accessToken = await getValidAccessToken(env, userId);
@@ -90,7 +93,7 @@ export default {
             headers: { 
               "Authorization": `Bearer ${accessToken}`,
             },
-            body: data["resume"]
+            body: resumeFile
           })
 
           console.log(`Status: ${resCreatePerson.status} ${resCreatePerson.statusText}`)
