@@ -89,7 +89,24 @@ export default {
           const accessToken = await getValidAccessToken(env, userId);
           console.log(`Access token: ${accessToken}`)
           console.log("Creating new person record from resume...")
-          const resCreatePerson = await fetch("https://bb3api.topechelon.com/public/v1/people/parse", {
+          const resCreatePerson = await this.fetch("https://bb3api.topechelon.com/public/v1/people", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({
+              "first_name": formData.get("fname"),
+              "last_name": formData.get("lname"),
+              "status": "active"
+            })
+          })
+
+          console.log(`Status: ${resCreatePerson.status} ${resCreatePerson.statusText}`)
+          const personRecord = await resCreatePerson.json();
+          console.log(`New person created with ID: ${personRecord["person"]["id"]}`)
+          console.log(personRecord)
+
+          const resParseResume = await fetch("https://bb3api.topechelon.com/public/v1/people/parse", {
             method: "POST",
             headers: {
               "Authorization": `Bearer ${accessToken}`,
@@ -101,10 +118,8 @@ export default {
             console.log(resCreatePerson)
           }
 
-          console.log(`Status: ${resCreatePerson.status} ${resCreatePerson.statusText}`)
-          const personRecord = await resCreatePerson.json();
-          console.log(`New person created with ID: ${personRecord["person"]["id"]}`)
-          console.log(personRecord)
+          console.log(`Status: ${resParseResume.status} ${resParseResume.statusText}`)
+          console.log("Resume parsed")
           await env.TOKEN_KV.put(`personRecord:${data["fname"]}${data["lname"]}`, JSON.stringify(personRecord));
 
           return new Response("Ok", { 
