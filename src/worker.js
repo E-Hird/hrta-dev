@@ -89,7 +89,7 @@ export default {
           const accessToken = await getValidAccessToken(env, userId);
           console.log(`Access token: ${accessToken}`)
           console.log("Creating new person record from resume...")
-          const resCreatePerson = await this.fetch("https://bb3api.topechelon.com/public/v1/people", {
+          const resCreatePerson = await fetch("https://bb3api.topechelon.com/public/v1/people", {
             method: "POST",
             headers: {
               "Authorization": `Bearer ${accessToken}`,
