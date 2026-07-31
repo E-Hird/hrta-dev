@@ -81,7 +81,9 @@ export default {
           const resumeFile = formData.get("resume")
           const data = Object.fromEntries(formData)
           console.log(data);
-          console.log(resumeFile instanceof Blob, resumeFile.size, resumeFile.type, resumeFile.name); 
+          console.log(resumeFile instanceof Blob, resumeFile.size, resumeFile.type, resumeFile.name);
+          const fileDeliver = new FormData();
+          fileDeliver.append("file", resumeFile, resumeFile.name)
 
           console.log("Getting access token...")
           const accessToken = await getValidAccessToken(env, userId);
@@ -92,7 +94,7 @@ export default {
             headers: {
               "Authorization": `Bearer ${accessToken}`,
             },
-            body: resumeFile
+            body: fileDeliver
           })
 
           if (!resCreatePerson.ok) {

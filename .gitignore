@@ -4,3 +4,5 @@ node_modules
 eslint.config.mjs
 .dev.vars
 test.js
+test_resume.pdf
+trycurl.ps1
