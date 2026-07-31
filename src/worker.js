@@ -93,6 +93,7 @@ export default {
             method: "POST",
             headers: {
               "Authorization": `Bearer ${accessToken}`,
+              "Content-Type": "application/json"
             },
             body: JSON.stringify({
               "person": {
@@ -103,7 +104,7 @@ export default {
             })
           })
 
-          console.log(`Status: ${resCreatePerson.status} ${resCreatePerson.statusText}\nText: ${resCreatePerson.body}`)
+          console.log(`Status: ${resCreatePerson.status} ${resCreatePerson.statusText}\nText: ${resCreatePerson.text()}`)
           const personRecord = await resCreatePerson.json();
           console.log(`New person created with ID: ${personRecord["person"]["id"]}`)
           console.log(personRecord)
