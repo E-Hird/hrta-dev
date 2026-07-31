@@ -90,14 +90,13 @@ export default {
           const resCreatePerson = await fetch("https://bb3api.topechelon.com/public/v1/people/parse", {
             method: "POST",
             headers: {
-              "Content-Type": "file",
               "Authorization": `Bearer ${accessToken}`,
             },
             body: resumeFile
           })
 
           if (!resCreatePerson.ok) {
-            console.log(await resCreatePerson.text())
+            console.log(resCreatePerson)
           }
 
           console.log(`Status: ${resCreatePerson.status} ${resCreatePerson.statusText}`)
