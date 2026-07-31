@@ -78,12 +78,8 @@ export default {
           }
 
           const formData = await request.formData();
-          const resumeFile = formData.get("resume")
           const data = Object.fromEntries(formData)
           console.log(data);
-          console.log(resumeFile instanceof Blob, resumeFile.size, resumeFile.type, resumeFile.name);
-          const fileDeliver = new FormData();
-          fileDeliver.append("file", resumeFile, resumeFile.name)
 
           console.log("Getting access token...")
           const accessToken = await getValidAccessToken(env, userId);
@@ -104,10 +100,15 @@ export default {
             })
           })
 
-          console.log(`Status: ${resCreatePerson.status} ${resCreatePerson.statusText}\nText: ${resCreatePerson.text()}`)
           const personRecord = await resCreatePerson.json();
+          console.log(`Status: ${resCreatePerson.status} ${resCreatePerson.statusText}\nText: ${personRecord}`)
           console.log(`New person created with ID: ${personRecord["person"]["id"]}`)
           console.log(personRecord)
+
+          const resumeFile = formData.get("resume")
+          console.log(resumeFile instanceof Blob, resumeFile.size, resumeFile.type, resumeFile.name);
+          const fileDeliver = new FormData();
+          fileDeliver.append("file", resumeFile, resumeFile.name)
 
           const resParseResume = await fetch("https://bb3api.topechelon.com/public/v1/people/parse", {
             method: "POST",
