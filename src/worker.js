@@ -81,8 +81,7 @@ export default {
           const resumeFile = formData.get("resume")
           const data = Object.fromEntries(formData)
           console.log(data);
-          console.log("File name:", resumeFile?.name);
-          console.log("File type:", resumeFile?.type);
+          console.log(resumeFile instanceof Blob, resumeFile.size, resumeFile.type, resumeFile.name); 
 
           console.log("Getting access token...")
           const accessToken = await getValidAccessToken(env, userId);
@@ -91,12 +90,15 @@ export default {
           const resCreatePerson = await fetch("https://bb3api.topechelon.com/public/v1/people/parse", {
             method: "POST",
             headers: {
-              "Accept": "*/*",
               "Content-Type": "file",
               "Authorization": `Bearer ${accessToken}`,
             },
             body: resumeFile
           })
+
+          if (!resCreatePerson.ok) {
+            console.log(await resCreatePerson.text())
+          }
 
           console.log(`Status: ${resCreatePerson.status} ${resCreatePerson.statusText}`)
           const personRecord = await resCreatePerson.json();

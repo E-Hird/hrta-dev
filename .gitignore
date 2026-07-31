@@ -3,3 +3,4 @@ node_modules
 .wrangler
 eslint.config.mjs
 .dev.vars
+test.js
