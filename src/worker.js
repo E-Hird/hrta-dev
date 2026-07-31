@@ -95,13 +95,15 @@ export default {
               "Authorization": `Bearer ${accessToken}`,
             },
             body: JSON.stringify({
-              "first_name": formData.get("fname"),
-              "last_name": formData.get("lname"),
-              "status": "active"
+              "person": {
+                "first_name": formData.get("fname"),
+                "last_name": formData.get("lname"),
+                "status": "active"
+              }
             })
           })
 
-          console.log(`Status: ${resCreatePerson.status} ${resCreatePerson.statusText}`)
+          console.log(`Status: ${resCreatePerson.status} ${resCreatePerson.statusText}\nText: ${resCreatePerson.body}`)
           const personRecord = await resCreatePerson.json();
           console.log(`New person created with ID: ${personRecord["person"]["id"]}`)
           console.log(personRecord)
