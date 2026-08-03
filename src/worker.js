@@ -56,7 +56,7 @@ export default {
           console.log(data);
 
           console.log("Getting access token...")
-          const accessToken = await getValidAccessToken(env, userId);
+          const accessToken = await getAccessTokenTE(env, userId);
           console.log(`Access token: ${accessToken}`)
           console.log("Creating new person record from resume...")
           const resCreatePerson = await fetch("https://bb3api.topechelon.com/public/v1/people", {
