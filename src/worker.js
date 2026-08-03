@@ -1,42 +1,19 @@
-function isExpired(tokens){
-  const time = Date.now() / 1000;
-  if ((time - tokens["created_at"]) > tokens["expires_in"]){
-    return true;
-  } else {
-    return false;
-  }
-}
+/**
+ * Worker Entry Point
+ * 
+ * Receives requests from clients and routes them to the correct function.
+ * 
+ * Env vars required: USER_ID
+ */
 
-async function getValidAccessToken(env, userId) {
-  const tokens = await env.TOKEN_KV.get(`tokens:${userId}`, "json")
-
-  if (isExpired(tokens)) {
-    console.log("Token is expired")
-    const resAuthToken = await fetch("https://bb3api.topechelon.com/top_echelon_provider/oauth/token", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        grant_type: "refresh_token",
-        refresh_token: tokens.refresh_token,
-        client_id: env.CLIENT_ID,
-        client_secret: env.CLIENT_SECRET,
-        redirect_uri: env.REDIRECT_URI,
-      }),
-    });
-    const newTokens = await resAuthToken.json();
-    await env.TOKEN_KV.put(`tokens:${userId}`, JSON.stringify(newTokens));
-    return newTokens.access_token;
-  }
-
-  return tokens.access_token;
-}
-
+import {getAccessTokenTE, newAccessToken} from "./authenticate.js";
 
 export default {
 	async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const userId = env.USER_ID
 
+    // Handle CORS for preflight requests
     if (request.method === "OPTIONS") {
       return new Response(null, {
         headers: {
@@ -47,25 +24,22 @@ export default {
       });
     }
 
+    // Route incoming requests
     try {
       switch (url.pathname){
+        /**
+         * Responses:
+         * - 200: access token created successfully
+         */
         case "/topechelon/callback":
           const tokenCode = url.searchParams.get("code");
-          const resAuthToken = await fetch("https://bb3api.topechelon.com/top_echelon_provider/oauth/token", {
-            method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: new URLSearchParams({
-              grant_type: "authorization_code",
-              code: tokenCode,
-              client_id: env.CLIENT_ID,
-              client_secret: env.CLIENT_SECRET,
-              redirect_uri: env.REDIRECT_URI,
-            }),
-          })
-          const newTokens = await resAuthToken.json();
-          await env.TOKEN_KV.put(`tokens:${userId}`, JSON.stringify(newTokens))
+          resStatus = await newAccessToken(env, tokenCode, userId)
           return new Response(`Response: ${resAuthToken.status}`, { status: resAuthToken.status })
 
+        /**
+         * Responses:
+         * - 200: submission accepted and forwarded
+         */
         case "/fractional":
           console.log("Got fractional request.")
           if (request.method !== "POST") {
@@ -140,6 +114,11 @@ export default {
       }
     } catch (error) {
       console.error(`Server Error: ${error}`)
+      // On error send 5xx to client, handle CORS
+      /**
+       * Responses:
+       * - 500: general server error
+       */
       return new Response("Server Error", {
         status: 500,
         headers: {
