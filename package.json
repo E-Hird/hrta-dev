@@ -1,6 +1,7 @@
 {
   "name": "hrta-dev",
   "version": "1.0.0",
+  "type": "module",
   "description": "A collection of tools for HR Talent Alliance",
   "main": "index.js",
   "scripts": {

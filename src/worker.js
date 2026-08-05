@@ -33,8 +33,8 @@ export default {
          */
         case "/topechelon/callback":
           const tokenCode = url.searchParams.get("code");
-          resStatus = await newAccessToken(env, tokenCode, userId)
-          return new Response(`Response: ${resAuthToken.status}`, { status: resAuthToken.status })
+          const resStatus = await newAccessToken(env, tokenCode, userId)
+          return new Response(`Response: ${resStatus}`, { status: resStatus })
 
         /**
          * Responses:
