@@ -87,7 +87,7 @@ function createResponseFile(formData){
 
 export async function fractionalSubmission(accessToken, formData){
     // Check that the form is formatted correctly
-    const formCheck = checkFormSubmission(formData, fractional=true)
+    const formCheck = checkFormSubmission(formData, true)
     if (formCheck["status"] !== 200){
         return {
             "status": formCheck["status"],
