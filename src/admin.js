@@ -52,8 +52,7 @@ function retryTimer(retryAfterHeader){
 /**
  * Creates a dictionary of duplicate people records on Top Echelon.
  * @param {string} accessToken 
- * @returns {Map} a dictionary of duplicate people and their IDs
-* @returns  `false` on error
+ * @returns {Object} status object containing a `"duplicates"` field on success
  */
 export async function findDuplicatesTE(accessToken) {
     const seen = new Map();
@@ -93,9 +92,18 @@ export async function findDuplicatesTE(accessToken) {
                 await timer;
             } else {
                 console.error("Retry timer broken or too long.")
-                return false
+                return {
+                    "status": 429,
+                    "message": "Retry timer broken or too long"
+                }
             }
             continue;
+        } else if (resPeopleSearch.status === 401) {
+            console.error("Authentication error")
+            return {
+                "status": 401,
+                "message": "Authentication error"
+            }
         } else if (resPeopleSearch.status != 200) {
             // By default retry after 5 seconds
             retries += 1
@@ -126,7 +134,11 @@ export async function findDuplicatesTE(accessToken) {
     const duplicates = new Map(
         [...seen].filter(([, values]) => values.length > 1)
     );
-    return duplicates;
+    return {
+        "status": 200,
+        "message": "Success",
+        "duplicates": duplicates
+    };
 }
 
 /**
@@ -136,12 +148,11 @@ export async function findDuplicatesTE(accessToken) {
  * @returns {Object} the status and a status message of the check
  */
 export async function markDuplicatesTE(accessToken, records){
-    const success = true;
     // Check that the delete hotlist exists
 
     const message = "All good";
     return {
-        "status": success,
+        "status": 200,
         "message": message
     }
 }
