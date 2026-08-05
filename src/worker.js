@@ -60,6 +60,8 @@ export default {
           console.log("Creating a new person record")
           const createPerson = fractionalSubmission(accessToken, formData);
 
+          console.log(`New person created, status: ${createPerson["status"]}`)
+
           return new Response("Ok", { 
             status: 200,
             headers: {
