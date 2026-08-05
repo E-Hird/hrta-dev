@@ -90,16 +90,19 @@ export async function fractionalSubmission(accessToken, formData){
     // Check that the form is formatted correctly
     const formCheck = checkFormSubmission(formData, true)
     if (formCheck["status"] !== 200){
+        console.log(JSON.stringify(formCheck))
         return {
             "status": formCheck["status"],
             "message": "Error"
         }
     }
+    console.log("Form checked")
     // Parse a new record from the resume file
     const resumeFile = formData.get("resume")
     const fileForm = new FormData();
     fileForm.append("file", resumeFile, resumeFile.name)
 
+    console.log("Parsing resume")
     const resParseResume = await fetch("https://bb3api.topechelon.com/public/v1/people/parse", {
         method: "POST",
         headers: {
@@ -110,6 +113,7 @@ export async function fractionalSubmission(accessToken, formData){
     console.log(`Parse response: ${resParseResume.status} ${resParseResume.statusText}`)
 
     // Find the record that was just created
+    console.log("Searching for person")
     const resPersonSearch = await fetch("https://bb3api.topechelon.com/public/v1/people/search", {
         method: "POST",
         headers: {
@@ -133,6 +137,7 @@ export async function fractionalSubmission(accessToken, formData){
     console.log("Created record with id:", personId)
 
     // Update the record with extra details
+    console.log("Updating person")
     const resPersonUpdate = await fetch(`https://bb3api.topechlon.com/public/v1/people/${personId}`, {
         method: "PUT",
         headers: {
@@ -156,6 +161,7 @@ export async function fractionalSubmission(accessToken, formData){
     console.log(`Update response: ${resPersonUpdate.status} ${resPersonUpdate.statusText}`)
 
     // Create an attachment with form response
+    console.log("Adding attachment")
     const resAttachment = await fetch(`https://bb3api.topechlon.com/public/v1/people/${personId}/attachments`, {
         method: "POST",
         headers: {
