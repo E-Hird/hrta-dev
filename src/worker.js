@@ -6,7 +6,8 @@
  * Env vars required: USER_ID
  */
 
-import {getAccessTokenTE, newAccessToken} from "./authenticate.js";
+import { getAccessTokenTE, newAccessToken } from "./authenticate.js";
+import { fractionalSubmission } from "./form.js";
 
 export default {
 	async fetch(request, env, ctx) {
@@ -52,53 +53,12 @@ export default {
           }
 
           const formData = await request.formData();
-          const data = Object.fromEntries(formData)
-          console.log(data);
 
-          console.log("Getting access token...")
           const accessToken = await getAccessTokenTE(env, userId);
           console.log(`Access token: ${accessToken}`)
-          console.log("Creating new person record from resume...")
-          const resCreatePerson = await fetch("https://bb3api.topechelon.com/public/v1/people", {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${accessToken}`,
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              "person": {
-                "first_name": formData.get("fname"),
-                "last_name": formData.get("lname"),
-                "status": "active"
-              }
-            })
-          })
 
-          const personRecord = await resCreatePerson.json();
-          console.log(`Status: ${resCreatePerson.status} ${resCreatePerson.statusText}\nText: ${personRecord}`)
-          console.log(`New person created with ID: ${personRecord["person"]["id"]}`)
-          console.log(personRecord)
-
-          const resumeFile = formData.get("resume")
-          console.log(resumeFile instanceof Blob, resumeFile.size, resumeFile.type, resumeFile.name);
-          const fileDeliver = new FormData();
-          fileDeliver.append("file", resumeFile, resumeFile.name)
-
-          const resParseResume = await fetch("https://bb3api.topechelon.com/public/v1/people/parse", {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${accessToken}`,
-            },
-            body: fileDeliver
-          })
-
-          if (!resCreatePerson.ok) {
-            console.log(resCreatePerson)
-          }
-
-          console.log(`Status: ${resParseResume.status} ${resParseResume.statusText}`)
-          console.log("Resume parsed")
-          await env.TOKEN_KV.put(`personRecord:${data["fname"]}${data["lname"]}`, JSON.stringify(personRecord));
+          console.log("Creating a new person record")
+          const createPerson = fractionalSubmission(accessToken, formData);
 
           return new Response("Ok", { 
             status: 200,
