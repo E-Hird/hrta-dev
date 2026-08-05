@@ -29,7 +29,7 @@ async function getDeleteListTE(accessToken) {
  * @returns A promise to be awaited.
  */
 function retryTimer(retryAfterHeader){
-    let waitMs;
+    var waitMs;
     // Generate timer
     if (retryAfterHeader) {
         const seconds = Number(retryAfterHeader) + 5;

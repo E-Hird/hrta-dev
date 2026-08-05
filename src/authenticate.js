@@ -30,7 +30,7 @@ function isExpired(tokens){
  * @param {string} userId 
  * @returns {Object} JSON body of new tokens
  */
-async function updateToken(env, tokens, userId){
+async function updateToken(env, tokens){
     const resAuthToken = await fetch("https://bb3api.topechelon.com/top_echelon_provider/oauth/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -57,7 +57,7 @@ export async function getAccessTokenTE(env, userId) {
 
   if (isExpired(tokens)) {
     console.log("Token is expired")
-    const newTokens = await updateToken(env, tokens, userId)
+    const newTokens = await updateToken(env, tokens)
     // Store new token locally
     await env.TOKEN_KV.put(`tokens:${userId}`, JSON.stringify(newTokens));
     return newTokens.access_token;
