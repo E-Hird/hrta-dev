@@ -111,6 +111,9 @@ export async function fractionalSubmission(accessToken, formData){
         body: fileForm
     })
     console.log(`Parse response: ${resParseResume.status} ${resParseResume.statusText}`)
+    if (resParseResume.status !== 201){
+        console.log(resParseResume.body)
+    }
 
     // Find the record that was just created
     console.log("Searching for person")
@@ -125,7 +128,7 @@ export async function fractionalSubmission(accessToken, formData){
             "sort_by": "date_added",
             "sort_order": "desc",
             "person_search": {
-                "keyword": `${formData.get("fname")} ${formData("lname")}`,
+                "keyword": `${formData.get("fname")} ${formData.get("lname")}`,
                 "minimum_date_entered": getDateString(new Date(Date.now())),
             }
         })
