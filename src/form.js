@@ -103,6 +103,7 @@ export async function fractionalSubmission(accessToken, formData){
     fileForm.append("file", resumeFile, resumeFile.name)
 
     console.log("Parsing resume")
+    console.log(`Using token: ${accessToken}`)
     const resParseResume = await fetch("https://bb3api.topechelon.com/public/v1/people/parse", {
         method: "POST",
         headers: {
@@ -112,7 +113,7 @@ export async function fractionalSubmission(accessToken, formData){
     })
     console.log(`Parse response: ${resParseResume.status} ${resParseResume.statusText}`)
     if (resParseResume.status !== 201){
-        console.log(resParseResume.text)
+        console.log(resParseResume.text())
     }
 
     // Find the record that was just created
