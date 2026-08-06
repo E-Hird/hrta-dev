@@ -113,7 +113,10 @@ export async function fractionalSubmission(accessToken, formData){
     })
     console.log(`Parse response: ${resParseResume.status} ${resParseResume.statusText}`)
     if (resParseResume.status !== 201){
-        console.log(resParseResume.text())
+        return {
+            "status": resParseResume.status,
+            "message": "Parse error"
+        }
     }
 
     // Find the record that was just created
@@ -135,6 +138,12 @@ export async function fractionalSubmission(accessToken, formData){
         })
     })
     console.log(`Search response: ${resPersonSearch.status} ${resPersonSearch.statusText}`)
+    if (resPersonSearch.status !== 200){
+        return {
+            "status": resPersonSearch.status,
+            "message": "Search error"
+        }
+    }
 
     const searchResults = await resPersonSearch.json()
     const personId = searchResults["entries"][0]["id"]
@@ -163,6 +172,12 @@ export async function fractionalSubmission(accessToken, formData){
         })
     })
     console.log(`Update response: ${resPersonUpdate.status} ${resPersonUpdate.statusText}`)
+    if (resPersonUpdate.status !== 200){
+        return {
+            "status": resPersonUpdate.status,
+            "message": "Update error"
+        }
+    }
 
     // Create an attachment with form response
     console.log("Adding attachment")
@@ -174,6 +189,12 @@ export async function fractionalSubmission(accessToken, formData){
         body: createResponseFile(formData)
     })
     console.log(`Attachment response: ${resAttachment.status} ${resAttachment.statusText}`)
+    if (resAttachment.status !== 201){
+        return {
+            "status": resAttachment.status,
+            "message": "Attachment error"
+        }
+    }
 
     return {
         "status": 200,
