@@ -112,7 +112,7 @@ export async function fractionalSubmission(accessToken, formData){
     })
     console.log(`Parse response: ${resParseResume.status} ${resParseResume.statusText}`)
     if (resParseResume.status !== 201){
-        console.log(resParseResume.body)
+        console.log(resParseResume.text)
     }
 
     // Find the record that was just created
