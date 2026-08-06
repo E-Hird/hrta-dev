@@ -58,7 +58,7 @@ export default {
           console.log(`Access token: ${accessToken}`)
 
           console.log("Creating a new person record")
-          const createPerson = fractionalSubmission(accessToken, formData);
+          const createPerson = await fractionalSubmission(accessToken, formData);
 
           console.log(`New person created, status: ${createPerson["status"]}`)
 
