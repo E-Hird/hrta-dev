@@ -193,6 +193,7 @@ export async function fractionalSubmission(accessToken, formData){
     }
 
     const searchResults = await resPersonSearch.json()
+    console.log(searchResults["entries"])
     const personId = searchResults["entries"][0]["id"]
     console.log("Created record with id:", personId)
 
