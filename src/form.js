@@ -23,10 +23,57 @@ function getDateString(date){
  * @returns {Object} the status and a status message of the check
  */
 function checkFormSubmission(formData, fractional=false){
-    const message = "All good";
+    const fields = ["fname", "lname", "email", "linkedIn", "resume", "location", "jobTitle", "industry", "company",
+        "boss", "responsibilities", "teamsAndFunctions", "challengesSolved", "fixBuildImprove", "outcomes", "problemSolving",
+        "keySystems", "workInterest", "companyInterest", "workTypePreference",
+    ]
+    var status = 200;
+    // Check if any fields are missing
+    var missingFieldString = ""
+    for (field of fields){
+        if (!formData.has(field)){
+            status = 400;
+            missingFieldString.concat(`${field}, `)
+        }
+    }
+    if (status === 400){
+        return {
+            "status": 400,
+            "message": `Missing fields: ${missingFieldString}`
+        }
+    }
+
+    // Check that 'resume' contains a file
+    const resumeFile = formData.get("resume")
+    if (!resumeFile instanceof File){
+        return {
+            "status": 400,
+            "message": `File missing`
+        }
+    }
+
+    // Check that the linkedin link is for linkedin
+    const linkedInProfile = formData.get("linkedIn");
+    if (!linkedInProfile.includes("www.linkedin.com/in/")){
+        return {
+            "status": 400,
+            "message": "Link to LinkedIn profile is malformed"
+        }
+    }
+
+    // Check that work preference is one of the given options
+    const options = ["On site/In office", "Hybrid", "Remote"]
+    if (!formData.get("workTypePreference") in options){
+        return {
+            "status": 400,
+            "message": "Invalid option chosen for work type preference."
+        }
+    }
+
+    // If all tests are passed then return a success
     return {
         "status": 200,
-        "message": message
+        "message": "All good"
     }
 }
 
