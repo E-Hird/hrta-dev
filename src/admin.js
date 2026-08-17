@@ -37,11 +37,11 @@ function retryTimer(retryAfterHeader){
             ? new Date(retryAfterHeader).getTime() - Date.now()
             : seconds * 1000;
     } else {
-        waitMs = 2 ** attempt * 1000;
+        waitMs = 2 * 1000;
     }
 
     // If timer is too long return false (generate an error)
-    if (waitMS > 120000){
+    if (waitMs > 120000){
         return false
     }
 

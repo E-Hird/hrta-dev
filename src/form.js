@@ -30,7 +30,7 @@ function checkFormSubmission(formData, fractional=false){
     var status = 200;
     // Check if any fields are missing
     var missingFieldString = ""
-    for (field of fields){
+    for (let field of fields){
         if (!formData.has(field)){
             status = 400;
             missingFieldString.concat(`${field}, `)
@@ -45,7 +45,7 @@ function checkFormSubmission(formData, fractional=false){
 
     // Check that 'resume' contains a file
     const resumeFile = formData.get("resume")
-    if (!resumeFile instanceof File){
+    if (!(resumeFile instanceof File)){
         return {
             "status": 400,
             "message": `File missing`
@@ -63,7 +63,7 @@ function checkFormSubmission(formData, fractional=false){
 
     // Check that work preference is one of the given options
     const options = ["On site/In office", "Hybrid", "Remote"]
-    if (!formData.get("workTypePreference") in options){
+    if (!(formData.get("workTypePreference") in options)){
         return {
             "status": 400,
             "message": "Invalid option chosen for work type preference."
