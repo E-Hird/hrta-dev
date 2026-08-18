@@ -7,7 +7,7 @@
  * env vars required: None
  */
 
-import { retryTimer } from "./utilities";
+import { retryTimer } from "./utilities.js";
 
 /**
  * Parse a Date object to a string of format `YYYY-MM-DD`
@@ -231,7 +231,7 @@ export async function fractionalSubmission(accessToken, formData){
     // Update the record with extra details
     console.log("Updating person")
     try{
-        const resPersonUpdate = await fetch(`https://bb3api.topechlon.com/public/v1/people/${personId}`, {
+        const resPersonUpdate = await fetch(`https://bb3api.topechelon.com/public/v1/people/${personId}`, {
             method: "PUT",
             headers: {
                 "Authorization": `Bearer ${accessToken}`,
@@ -265,7 +265,7 @@ export async function fractionalSubmission(accessToken, formData){
 
     // Create an attachment with form response
     console.log("Adding attachment")
-    const resAttachment = await fetch(`https://bb3api.topechlon.com/public/v1/people/${personId}/attachments`, {
+    const resAttachment = await fetch(`https://bb3api.topechelon.com/public/v1/people/${personId}/attachments`, {
         method: "POST",
         headers: {
             "Authorization": `Bearer ${accessToken}`,

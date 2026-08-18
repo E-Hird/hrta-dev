@@ -7,7 +7,7 @@
  * env vars required: None
  */
 
-import { retryTimer } from "./utilities";
+import { retryTimer } from "./utilities.js";
 
 /**
  * Gets the id of the `Delete` Hotlist or creates it if it doesn't exist
