@@ -252,7 +252,7 @@ export async function fractionalSubmission(accessToken, formData){
             })
         })
         console.log(`Update response: ${resPersonUpdate.status} ${resPersonUpdate.statusText}`)
-        console.log(`Update body: ${resPersonUpdate.body}`)
+        console.log(`Update body: ${resPersonUpdate.text()}`)
     } catch(err){
         console.error("Fetch threw:", err.message, err.cause)
     }
