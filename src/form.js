@@ -181,7 +181,7 @@ export async function fractionalSubmission(accessToken, formData){
                 "message": "Person record not found"
             }
         }
-        const timer = retryTimer(5);
+        const timer = retryTimer(0);
         // If timer is created return
         if (timer) {
             await timer;
@@ -252,6 +252,7 @@ export async function fractionalSubmission(accessToken, formData){
             })
         })
         console.log(`Update response: ${resPersonUpdate.status} ${resPersonUpdate.statusText}`)
+        console.log(`Update body: ${resPersonUpdate.body}`)
     } catch(err){
         console.error("Fetch threw:", err.message, err.cause)
     }
