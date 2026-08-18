@@ -7,6 +7,8 @@
  * env vars required: None
  */
 
+import { retryTimer } from "./utilities";
+
 /**
  * Parse a Date object to a string of format `YYYY-MM-DD`
  * @param {*} date
@@ -166,60 +168,93 @@ export async function fractionalSubmission(accessToken, formData){
         }
     }
 
+    
     // Find the record that was just created
-    console.log("Searching for person")
-    const resPersonSearch = await fetch("https://bb3api.topechelon.com/public/v1/people/search", {
-        method: "POST",
-        headers: {
-            "Authorization": `Bearer ${accessToken}`,
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            "page": 1,
-            "sort_by": "date_added",
-            "sort_order": "desc",
-            "person_search": {
-                "keyword": `${formData.get("fname")} ${formData.get("lname")}`,
-                "minimum_date_entered": getDateString(new Date(Date.now())),
+    var foundRecord = false;
+    var retries = 0;
+    var searchResults = null;
+    while (!foundRecord){
+        if (retries > 3){
+            console.error("Too many retries")
+            return {
+                "status": 404,
+                "message": "Person record not found"
             }
-        })
-    })
-    console.log(`Search response: ${resPersonSearch.status} ${resPersonSearch.statusText}`)
-    if (resPersonSearch.status !== 200){
-        return {
-            "status": resPersonSearch.status,
-            "message": "Search error"
         }
-    }
+        const timer = retryTimer(5);
+        // If timer is created return
+        if (timer) {
+            await timer;
+        } else {
+            console.error("Retry timer broken or too long.")
+            return {
+                "status": 500,
+                "message": "Retry timer broken or too long"
+            }
+        }
+        console.log("Searching for person")
+        const resPersonSearch = await fetch("https://bb3api.topechelon.com/public/v1/people/search", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${accessToken}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                "page": 1,
+                "sort_by": "date_added",
+                "sort_order": "desc",
+                "person_search": {
+                    "keyword": `${formData.get("fname")} ${formData.get("lname")}`,
+                    "minimum_date_entered": getDateString(new Date(Date.now())),
+                }
+            })
+        })
+        console.log(`Search response: ${resPersonSearch.status} ${resPersonSearch.statusText}`)
+        if (resPersonSearch.status !== 200){
+            return {
+                "status": resPersonSearch.status,
+                "message": "Search error"
+            }
+        }
 
-    const searchResults = await resPersonSearch.json()
-    console.log(searchResults["entries"])
+        searchResults = await resPersonSearch.json()
+        console.log(searchResults)
+        if (searchResults["pagination"]["total_count"] <= 0){
+            retries += 1
+            continue
+        }
+        foundRecord = true;
+    }
     const personId = searchResults["entries"][0]["id"]
     console.log("Created record with id:", personId)
 
     // Update the record with extra details
     console.log("Updating person")
-    const resPersonUpdate = await fetch(`https://bb3api.topechlon.com/public/v1/people/${personId}`, {
-        method: "PUT",
-        headers: {
-            "Authorization": `Bearer ${accessToken}`,
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            "person": {
-                "first_name": formData.get("fname"),
-                "last_name": formData.get("lname"),
-                "linked_in": formData.get("linkedIn"),
-                "email_addresses_attributes": [{
-                    "primary": true,
-                    "type": "work",
-                    "email": formData.get("email"),
-                    "do_not_email": false
-                }]
-            }
+    try{
+        const resPersonUpdate = await fetch(`https://bb3api.topechlon.com/public/v1/people/${personId}`, {
+            method: "PUT",
+            headers: {
+                "Authorization": `Bearer ${accessToken}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                "person": {
+                    "first_name": formData.get("fname"),
+                    "last_name": formData.get("lname"),
+                    "linked_in": formData.get("linkedIn"),
+                    "email_addresses_attributes": [{
+                        "primary": true,
+                        "type": "work",
+                        "email": formData.get("email"),
+                        "do_not_email": false
+                    }]
+                }
+            })
         })
-    })
-    console.log(`Update response: ${resPersonUpdate.status} ${resPersonUpdate.statusText}`)
+        console.log(`Update response: ${resPersonUpdate.status} ${resPersonUpdate.statusText}`)
+    } catch(err){
+        console.error("Fetch threw:", err.message, err.cause)
+    }
     if (resPersonUpdate.status !== 200){
         return {
             "status": resPersonUpdate.status,
