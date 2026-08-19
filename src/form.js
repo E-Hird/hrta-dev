@@ -65,7 +65,7 @@ function checkFormSubmission(formData, fractional=false){
 
     // Check that work preference is one of the given options
     const options = ["On site/In office", "Hybrid", "Remote"]
-    if (!(formData.get("workTypePreference") in options)){
+    if (!(options.includes(formData.get("workTypePreference")))){
         return {
             "status": 400,
             "message": "Invalid option chosen for work type preference."
@@ -136,14 +136,14 @@ function createResponseFile(formData){
 export async function fractionalSubmission(accessToken, formData){
     console.log("Processing fractional form submission")
     // Check that the form is formatted correctly
-    // const formCheck = checkFormSubmission(formData, true)
-    // if (formCheck["status"] !== 200){
-    //     console.log(JSON.stringify(formCheck))
-    //     return {
-    //         "status": formCheck["status"],
-    //         "message": "Error"
-    //     }
-    // }
+    const formCheck = checkFormSubmission(formData, true)
+    if (formCheck["status"] !== 200){
+        console.log(JSON.stringify(formCheck))
+        return {
+            "status": formCheck["status"],
+            "message": "Error"
+        }
+    }
     console.log("Form checked")
     // Parse a new record from the resume file
     const resumeFile = formData.get("resume")
