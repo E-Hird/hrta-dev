@@ -85,7 +85,7 @@ function checkFormSubmission(formData, fractional=false){
  * @returns {FormData} Delivery form
  */
 function createResponseFile(formData){
-    const content = ```
+    const content = `
     Name: ${formData.get("fname")} ${formData.get("lname")}
     Email: ${formData.get("email")}
     LinkedIn: ${formData.get("linkedIn")}
@@ -94,7 +94,7 @@ function createResponseFile(formData){
     Industry: ${formData.get("industry")}
     Company: ${formData.get("company")}
     Boss: ${formData.get("boss")}
-
+    
     Primary Responsibilities?
         ${formData.get("responsibilities")}
     
@@ -123,8 +123,7 @@ function createResponseFile(formData){
         ${formData.get("companyInterest")}
     
     Work Preference: ${formData.get("workTypePreference")}
-    ```
-
+    `;
     // Turn text into a file format
     const responseBlob = new Blob([content], { type: "text/plain" })
 
@@ -181,7 +180,7 @@ export async function fractionalSubmission(accessToken, formData){
                 "message": "Person record not found"
             }
         }
-        const timer = retryTimer(0);
+        const timer = retryTimer(1);
         // If timer is created return
         if (timer) {
             await timer;
@@ -218,7 +217,6 @@ export async function fractionalSubmission(accessToken, formData){
         }
 
         searchResults = await resPersonSearch.json()
-        console.log(searchResults)
         if (searchResults["pagination"]["total_count"] <= 0){
             retries += 1
             continue
@@ -230,32 +228,27 @@ export async function fractionalSubmission(accessToken, formData){
 
     // Update the record with extra details
     console.log("Updating person")
-    try{
-        const resPersonUpdate = await fetch(`https://bb3api.topechelon.com/public/v1/people/${personId}`, {
-            method: "PUT",
-            headers: {
-                "Authorization": `Bearer ${accessToken}`,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                "person": {
-                    "first_name": formData.get("fname"),
-                    "last_name": formData.get("lname"),
-                    "linked_in": formData.get("linkedIn"),
-                    "email_addresses_attributes": [{
-                        "primary": true,
-                        "type": "work",
-                        "email": formData.get("email"),
-                        "do_not_email": false
-                    }]
-                }
-            })
+    const resPersonUpdate = await fetch(`https://bb3api.topechelon.com/public/v1/people/${personId}`, {
+        method: "PUT",
+        headers: {
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            "person": {
+                "first_name": formData.get("fname"),
+                "last_name": formData.get("lname"),
+                "linked_in": formData.get("linkedIn"),
+                "email_addresses_attributes": [{
+                    "primary": true,
+                    "type": "work",
+                    "email": formData.get("email"),
+                    "do_not_email": false
+                }]
+            }
         })
-        console.log(`Update response: ${resPersonUpdate.status} ${resPersonUpdate.statusText}`)
-        console.log(`Update body: ${await resPersonUpdate.text()}`)
-    } catch(err){
-        console.error("Fetch threw:", err.message, err.cause)
-    }
+    })
+    console.log(`Update response: ${resPersonUpdate.status} ${resPersonUpdate.statusText}`)
     if (resPersonUpdate.status !== 200){
         return {
             "status": resPersonUpdate.status,
