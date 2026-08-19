@@ -40,6 +40,10 @@ export default {
         /**
          * Responses:
          * - 200: submission accepted and forwarded
+         * - 400: error submission was malformed
+         * - 405: incorrect method used
+         * - 403: incorrect origin used (not from website)
+         * - 500: repeated error(s) submitting form
          */
         case "/fractional":
           console.log("Got fractional request.")
@@ -54,22 +58,74 @@ export default {
 
           const formData = await request.formData();
 
-          const accessToken = await getAccessTokenTE(env, userId);
-          console.log(`Access token: ${accessToken}`)
+          var submitted = false;
+          var retries = 0;
+          while (!submitted){
+            // Return a server failure if submission hasn't succeeded after 3 tries
+            if (retries > 3){
+              return new Response("Repeated error(s) when submitting", { 
+                status: 500,
+                headers: {
+                  "Access-Control-Allow-Origin": "https://www.hrtalentalliance.com",
+                  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+                  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+                },
+              });
+            }
 
-          console.log("Creating a new person record")
-          const createPerson = await fractionalSubmission(accessToken, formData);
+            // Get the access token for Top Echelon
+            const accessToken = await getAccessTokenTE(env, userId);
+            // Attempt to submit the fractional form
+            const createPerson = await fractionalSubmission(accessToken, formData);
+            // Handle results of form submission
+            const submissionID = createPerson["id"]
+            switch (createPerson["status"]){
+              case 200: // Success
+                console.log(`Submission successful: ${submissionID}`)
+                return new Response("Form submitted successfully.", { 
+                  status: 200,
+                  headers: {
+                    "Access-Control-Allow-Origin": "https://www.hrtalentalliance.com",
+                    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+                    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+                  },
+                });
 
-          console.log(`New person created, status: ${createPerson["status"]}`)
+              case 400: // Malformed input
+                console.error(`${submissionID}: Error - malformed input (${createPerson["message"]})`)
+                return new Response(createPerson["message"], { 
+                  status: 400,
+                  headers: {
+                    "Access-Control-Allow-Origin": "https://www.hrtalentalliance.com",
+                    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+                    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+                  },
+                });
 
-          return new Response("Ok", { 
-            status: 200,
-            headers: {
-              "Access-Control-Allow-Origin": "https://www.hrtalentalliance.com",
-              "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-              "Access-Control-Allow-Headers": "Content-Type, Authorization",
-            },
-          });
+              case 403: // Top Echelon account failure
+              case 500: // Top Echelon server error
+                // Abort
+                console.error(`${submissionID}: Top Echelon Server error (${createPerson["message"]}), aborting...`)
+                return new Response(createPerson["message"], { 
+                  status: 500,
+                  headers: {
+                    "Access-Control-Allow-Origin": "https://www.hrtalentalliance.com",
+                    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+                    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+                  },
+                });
+
+              case 401: // Authentication failure
+              case 404: // Not found
+              case 422: // Request unacceptable
+              case 429: // Too many requests
+              default:
+                console.warn(`${submissionID}: Minor error encountered (${createPerson["message"]}), retrying...`)
+                // Retry
+                continue;
+            }
+          }
+          break; 
         
         default:
           return new Response("Page not found", { status: 400 })
