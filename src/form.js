@@ -7,11 +7,11 @@
  * env vars required: None
  */
 
-import { retryTimer } from "./utilities.js";
+import { uid, retryTimer } from "./utilities.js";
 
 /**
  * Parse a Date object to a string of format `YYYY-MM-DD`
- * @param {*} date
+ * @param {Date} date
  * @returns The a string in format YYYY-MM-DD
  */
 function getDateString(date){
@@ -20,11 +20,12 @@ function getDateString(date){
 
 /**
  * Checks if the contents of the form fits requirements.
- * @param {Object} formData 
+ * @param {FormData} formData 
  * @param {Boolean} fractional - default=false
  * @returns {Object} the status and a status message of the check
  */
 function checkFormSubmission(formData, fractional=false){
+    // List of fields that should be present in the formData
     const fields = ["fname", "lname", "email", "linkedIn", "resume", "location", "jobTitle", "industry", "company",
         "boss", "responsibilities", "teamsAndFunctions", "challengesSolved", "fixBuildImprove", "outcomes", "problemSolving",
         "keySystems", "workInterest", "companyInterest", "workTypePreference",
@@ -54,7 +55,7 @@ function checkFormSubmission(formData, fractional=false){
         }
     }
 
-    // Check that the linkedin link is for linkedin
+    // Check that the linkedin link is for a linkedin profile
     const linkedInProfile = formData.get("linkedIn");
     if (!linkedInProfile.includes("www.linkedin.com/in/")){
         return {
@@ -133,16 +134,28 @@ function createResponseFile(formData){
     return deliveryForm;
 }
 
+/**
+ * Processes a submission from the fractional form. Checks the validity of the form,
+ * parses the resume uploaded, finds the parsed record, updates any extra details,
+ * adds the form response as an attachment. (All in TopEchelon).
+ * @param {string} accessToken 
+ * @param {FormData} formData 
+ * @returns {Object} Status object with the submissionID, status and accompanying message.
+ */
 export async function fractionalSubmission(accessToken, formData){
-    console.log("Processing fractional form submission")
+    const submissionID = uid();
+    const statusObject = {
+        "id": submissionID,
+        "status": 500,
+        "message": "Submission Incomplete"
+    }
+    console.log(`Processing fractional form submission: ${submissionID}`)
     // Check that the form is formatted correctly
     const formCheck = checkFormSubmission(formData, true)
     if (formCheck["status"] !== 200){
-        console.log(JSON.stringify(formCheck))
-        return {
-            "status": formCheck["status"],
-            "message": "Error"
-        }
+        statusObject["status"] = formCheck["status"];
+        statusObject["message"] = formCheck["message"]
+        return statusObject
     }
     console.log("Form checked")
     // Parse a new record from the resume file
@@ -150,8 +163,7 @@ export async function fractionalSubmission(accessToken, formData){
     const fileForm = new FormData();
     fileForm.append("file", resumeFile, resumeFile.name)
 
-    console.log("Parsing resume")
-    console.log(`Using token: ${accessToken}`)
+    console.log(`${submissionID}: Parsing resume`)
     const resParseResume = await fetch("https://bb3api.topechelon.com/public/v1/people/parse", {
         method: "POST",
         headers: {
@@ -159,12 +171,11 @@ export async function fractionalSubmission(accessToken, formData){
         },
         body: fileForm
     })
-    console.log(`Parse response: ${resParseResume.status} ${resParseResume.statusText}`)
+    // console.log(`Parse response: ${resParseResume.status} ${resParseResume.statusText}`)
     if (resParseResume.status !== 201){
-        return {
-            "status": resParseResume.status,
-            "message": "Parse error"
-        }
+        statusObject["status"] = resParseResume.status;
+        statusObject["message"] = "Parse error"
+        return statusObject
     }
 
     
@@ -172,26 +183,27 @@ export async function fractionalSubmission(accessToken, formData){
     var foundRecord = false;
     var retries = 0;
     var searchResults = null;
+    console.log(`${submissionID}: Locating record`)
+    // Locating the record may take multiple attempts
     while (!foundRecord){
+        // If the record isn't found after 3 reties then return an error
         if (retries > 3){
-            console.error("Too many retries")
-            return {
-                "status": 404,
-                "message": "Person record not found"
-            }
+            console.error(`${submissionID}: Too many retries`)
+            statusObject["status"] = 404;
+            statusObject["message"] = "Person record not found";
+            return statusObject
         }
+        // Wait for the parsing process to finish
         const timer = retryTimer(1);
-        // If timer is created return
+        // If timer is created wait for it to expire
         if (timer) {
             await timer;
         } else {
-            console.error("Retry timer broken or too long.")
-            return {
-                "status": 500,
-                "message": "Retry timer broken or too long"
-            }
+            console.error(`${submissionID}:  Retry timer broken or too long.`)
+            statusObject["status"] = 500;
+            statusObject["message"] = "Retry timer broken or too long";
+            return statusObject
         }
-        console.log("Searching for person")
         const resPersonSearch = await fetch("https://bb3api.topechelon.com/public/v1/people/search", {
             method: "POST",
             headers: {
@@ -204,16 +216,15 @@ export async function fractionalSubmission(accessToken, formData){
                 "sort_order": "desc",
                 "person_search": {
                     "keyword": `${formData.get("fname")} ${formData.get("lname")}`,
-                    "minimum_date_entered": getDateString(new Date(Date.now())),
+                    "minimum_date_modified": getDateString(new Date(Date.now())),
                 }
             })
         })
-        console.log(`Search response: ${resPersonSearch.status} ${resPersonSearch.statusText}`)
+        // console.log(`Search response: ${resPersonSearch.status} ${resPersonSearch.statusText}`)
         if (resPersonSearch.status !== 200){
-            return {
-                "status": resPersonSearch.status,
-                "message": "Search error"
-            }
+            statusObject["status"] = resPersonSearch.status;
+            statusObject["message"] = "Search error"
+            return statusObject
         }
 
         searchResults = await resPersonSearch.json()
@@ -224,10 +235,20 @@ export async function fractionalSubmission(accessToken, formData){
         foundRecord = true;
     }
     const personId = searchResults["entries"][0]["id"]
-    console.log("Created record with id:", personId)
 
     // Update the record with extra details
-    console.log("Updating person")
+    console.log(`${submissionID}: Updating person`)
+    const updateBody = {
+        "first_name": formData.get("fname"),
+        "last_name": formData.get("lname"),
+        "linked_in": formData.get("linkedIn"),
+        "email_addresses_attributes": [{
+            "primary": true,
+            "type": "work",
+            "email": formData.get("email"),
+            "do_not_email": false
+        }]
+    }
     const resPersonUpdate = await fetch(`https://bb3api.topechelon.com/public/v1/people/${personId}`, {
         method: "PUT",
         headers: {
@@ -235,29 +256,18 @@ export async function fractionalSubmission(accessToken, formData){
             "Content-Type": "application/json"
         },
         body: JSON.stringify({
-            "person": {
-                "first_name": formData.get("fname"),
-                "last_name": formData.get("lname"),
-                "linked_in": formData.get("linkedIn"),
-                "email_addresses_attributes": [{
-                    "primary": true,
-                    "type": "work",
-                    "email": formData.get("email"),
-                    "do_not_email": false
-                }]
-            }
+            "person": updateBody
         })
     })
-    console.log(`Update response: ${resPersonUpdate.status} ${resPersonUpdate.statusText}`)
+    // console.log(`Update response: ${resPersonUpdate.status} ${resPersonUpdate.statusText}`)
     if (resPersonUpdate.status !== 200){
-        return {
-            "status": resPersonUpdate.status,
-            "message": "Update error"
-        }
+        statusObject["status"] = resPersonUpdate.status;
+        statusObject["message"] = "Update error"
+        return statusObject
     }
 
     // Create an attachment with form response
-    console.log("Adding attachment")
+    console.log(`${submissionID}: Adding attachment`)
     const resAttachment = await fetch(`https://bb3api.topechelon.com/public/v1/people/${personId}/attachments`, {
         method: "POST",
         headers: {
@@ -265,16 +275,15 @@ export async function fractionalSubmission(accessToken, formData){
         },
         body: createResponseFile(formData)
     })
-    console.log(`Attachment response: ${resAttachment.status} ${resAttachment.statusText}`)
+    // console.log(`Attachment response: ${resAttachment.status} ${resAttachment.statusText}`)
     if (resAttachment.status !== 201){
-        return {
-            "status": resAttachment.status,
-            "message": "Attachment error"
-        }
+        statusObject["status"] = resAttachment.status;
+        statusObject["message"] = "Attachment error";
+        return statusObject
     }
 
-    return {
-        "status": 200,
-        "message": "All good"
-    }
+    // If all stages are completed successfully return 200 code
+    statusObject["status"] = 200;
+    statusObject["message"] = "Person record created successfully";
+    return statusObject
 }

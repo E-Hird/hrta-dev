@@ -31,3 +31,11 @@ export function retryTimer(retryAfterHeader){
     console.warn(`Retry required, waiting ${waitMs}ms`);
     return new Promise(resolve => setTimeout(resolve, waitMs));
 }
+
+/**
+ * Generate a unique ID indexable by the time it was created.
+ * @returns {string} A unique time based ID
+ */
+export function uid(){
+    return Date.now().toString(36) + Math.random.toString(36).substring(2);
+}
