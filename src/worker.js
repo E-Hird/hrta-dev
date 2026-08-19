@@ -128,7 +128,7 @@ export default {
           break; 
         
         default:
-          return new Response("Page not found", { status: 400 })
+          return new Response("Page not found", { status: 404 })
       }
     } catch (error) {
       console.error(`Server Error: ${error}`)
