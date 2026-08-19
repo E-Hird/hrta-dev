@@ -7,6 +7,7 @@
  * env vars required: None
  */
 
+import { addToHotlist } from "./admin.js";
 import { uid, retryTimer } from "./utilities.js";
 
 /**
@@ -281,6 +282,9 @@ export async function fractionalSubmission(accessToken, formData){
         statusObject["message"] = "Attachment error";
         return statusObject
     }
+
+    // Add to the fractional work hotlist
+    const hotlist = addToHotlist(accessToken, "fractional", [personId])
 
     // If all stages are completed successfully return 200 code
     statusObject["status"] = 200;
