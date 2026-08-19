@@ -50,7 +50,7 @@ export async function findDuplicatesTE(accessToken) {
             },
             body: JSON.stringify({
                 "page": currentPage,
-                "sort_by": "date_added",
+                "sort_by": "date_modified",
                 "sort_order": "asc",
                 "person_search": {
                     "keyword": ""
@@ -118,13 +118,58 @@ export async function findDuplicatesTE(accessToken) {
 }
 
 /**
- * Marks a defined list of people records for deletion.
+ * Adds a list of records to a desired hotlist
  * @param {string} accessToken 
- * @param {Object} records
- * @returns {Object} the status and a status message of the check
+ * @param {string} hotlist 
+ * @param {Array} records 
+ * @returns {Object} A status object containing a status and message
  */
-export async function markDuplicatesTE(accessToken, records){
-    // Check that the delete hotlist exists
+export async function addToHotlist(accessToken, hotlist, records){
+    // Check that the desired hotlist
+    var hotlistID = null;
+    const resHotlistSearch = await fetch(`https://bb3api.topechelon.com/public/v1/hotlists?record_type=person&name=${hotlist}&page=1`, {
+        method: "GET",
+        headers: { "Authorization": `Bearer ${accessToken}` }
+    })
+    //console.log(`Hotlist search response: ${resHotlistSearch.status} ${resHotlistSearch.statusText}`)
+    const searchResults = await resHotlistSearch.json()
+
+    const metadata = searchResults["metadata"]["resultset"]
+    if (metadata["count"] > 0){
+        hotlistID = searchResults["results"][0]["id"]
+    } else {
+        // Create the hotlist if it doesn't exist
+        const resHotlistCreate = await fetch("https://bb3api.topechelon.com/public/v1/hotlists?record_type=person", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${accessToken}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                "hotlist": {
+                    "name": hotlist,
+                    "share_with_agency": true
+                }
+            })
+        })
+        //console.log(`Hotlist create response: ${resHotlistCreate.status} ${resHotlistCreate.statusText}`)
+        const createdHotlist = await resHotlistCreate.json()
+        hotlistID = createdHotlist["hotlist"]["id"]
+    }
+
+    // Add each record in the list to the hotlist
+    for (let record of records){
+        const resAddToHotlist = await fetch(`https://bb3api.topechelon.com/public/v1/hotlists/${hotlistID}/add_record?record_id=${record}`, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${accessToken}`,
+            },
+        })
+        //console.log(`Add response: ${resAddToHotlist.status} ${resAddToHotlist.statusText}`)
+        if (resAddToHotlist.status !== 200){
+            console.error(`Failed to add record ${record} to hotlist ${hotlist}`)
+        }
+    }
 
     const message = "All good";
     return {

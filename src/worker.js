@@ -39,6 +39,15 @@ export default {
 
         /**
          * Responses:
+         * - 200: access token refreshed successfully
+         */
+        case "/refresh-token":
+          const accessToken = await getAccessTokenTE(env, userId);
+          console.log(`Access token: ${accessToken}`)
+          return new Response("Token refreshed, check KV", { status: 200 })
+
+        /**
+         * Responses:
          * - 200: submission accepted and forwarded
          * - 400: error submission was malformed
          * - 405: incorrect method used
