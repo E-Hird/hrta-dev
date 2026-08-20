@@ -284,6 +284,7 @@ export async function fractionalSubmission(accessToken, formData){
     }
 
     // Add to the fractional work hotlist
+    console.log(`${submissionID}: Adding to fractional hotlist`)
     const hotlist = addToHotlist(accessToken, "fractional", [personId])
 
     // If all stages are completed successfully return 200 code
