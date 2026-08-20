@@ -159,7 +159,6 @@ export async function addToHotlist(accessToken, hotlist, records){
 
     // Add each record in the list to the hotlist
     for (let record of records){
-        console.log(`Adding record (${record}) to hotlist (${hotlistID})`)
         const resAddToHotlist = await fetch(`https://bb3api.topechelon.com/public/v1/hotlists/${hotlistID}/add_record?record_id=${record}`, {
             method: "POST",
             headers: {
@@ -169,8 +168,6 @@ export async function addToHotlist(accessToken, hotlist, records){
         //console.log(`Add response: ${resAddToHotlist.status} ${resAddToHotlist.statusText}`)
         if (resAddToHotlist.status !== 200){
             console.error(`Failed to add record ${record} to hotlist ${hotlist}`)
-        } else {
-            console.log("Record added")
         }
     }
 
