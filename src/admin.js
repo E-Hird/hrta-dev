@@ -114,7 +114,7 @@ async function getHotlistID(accessToken, hotlist){
         headers: { "Authorization": `Bearer ${accessToken}` }
     })
     //console.log(`Hotlist search response: ${resHotlistSearch.status} ${resHotlistSearch.statusText}`)
-    if (resHotlistCreate.status !== 200){
+    if (resHotlistSearch.status !== 200){
         console.error(`Hotlist ${hotlist} could not be searched.`)
         return false
     }
@@ -157,7 +157,7 @@ async function getHotlistID(accessToken, hotlist){
  */
 export async function addToHotlist(accessToken, hotlist, records){
     // Get the desired hotlist ID
-    const hotlistID = getHotlistID(accessToken, hotlist);
+    const hotlistID = await getHotlistID(accessToken, hotlist);
     if (!hotlist){
         return {
             "status": 500,
