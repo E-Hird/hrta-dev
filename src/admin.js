@@ -10,22 +10,6 @@
 import { retryTimer } from "./utilities.js";
 
 /**
- * Gets the id of the `Delete` Hotlist or creates it if it doesn't exist
- * @param {string} accessToken 
- * @returns {string} tagId
- */
-async function getDeleteListTE(accessToken) {
-    const tagId = "";
-    const resDeleteHotlist = await fetch("https://bb3api.topechelon.com/public/v1/hotlists?record_type=person&scope=my&name=Delete&page=1", {
-        method: "GET",
-        headers: {
-            "Authorization": `Bearer ${accessToken}`
-        }
-    })
-    return tagId;
-}
-
-/**
  * Creates a dictionary of duplicate people records on Top Echelon.
  * @param {string} accessToken 
  * @returns {Object} status object containing a `"duplicates"` field on success
