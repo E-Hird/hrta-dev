@@ -102,25 +102,27 @@ export async function findDuplicatesTE(accessToken) {
 }
 
 /**
- * Adds a list of records to a desired hotlist
+ * Searches for a hotlist by name and creates it if not found.
  * @param {string} accessToken 
  * @param {string} hotlist 
- * @param {Array} records 
- * @returns {Object} A status object containing a status and message
+ * @returns {string} The id of the hotlist.
  */
-export async function addToHotlist(accessToken, hotlist, records){
-    // Check that the desired hotlist
-    var hotlistID = null;
+async function getHotlistID(accessToken, hotlist){
+    // Check if the desired hotlist exists
     const resHotlistSearch = await fetch(`https://bb3api.topechelon.com/public/v1/hotlists?record_type=person&name=${hotlist}&page=1`, {
         method: "GET",
         headers: { "Authorization": `Bearer ${accessToken}` }
     })
     //console.log(`Hotlist search response: ${resHotlistSearch.status} ${resHotlistSearch.statusText}`)
+    if (resHotlistCreate.status !== 200){
+        console.error(`Hotlist ${hotlist} could not be searched.`)
+        return false
+    }
     const searchResults = await resHotlistSearch.json()
 
     const metadata = searchResults["metadata"]["resultset"]
     if (metadata["count"] > 0){
-        hotlistID = searchResults["results"][0]["id"]
+        return searchResults["results"][0]["id"]
     } else {
         // Create the hotlist if it doesn't exist
         const resHotlistCreate = await fetch("https://bb3api.topechelon.com/public/v1/hotlists?record_type=person", {
@@ -137,8 +139,30 @@ export async function addToHotlist(accessToken, hotlist, records){
             })
         })
         //console.log(`Hotlist create response: ${resHotlistCreate.status} ${resHotlistCreate.statusText}`)
+        if (resHotlistCreate.status !== 200){
+            console.error(`Hotlist ${hotlist} could not be created.`)
+            return false
+        }
         const createdHotlist = await resHotlistCreate.json()
-        hotlistID = createdHotlist["hotlist"]["id"]
+        return createdHotlist["hotlist"]["id"]
+    }
+}
+
+/**
+ * Adds a list of records to a desired hotlist
+ * @param {string} accessToken 
+ * @param {string} hotlist 
+ * @param {Array} records 
+ * @returns {Object} A status object containing a status and message
+ */
+export async function addToHotlist(accessToken, hotlist, records){
+    // Get the desired hotlist ID
+    const hotlistID = getHotlistID(accessToken, hotlist);
+    if (!hotlist){
+        return {
+            "status": 500,
+            "message": "Hotlist could not be found or created"
+        }
     }
 
     // Add each record in the list to the hotlist
@@ -155,9 +179,8 @@ export async function addToHotlist(accessToken, hotlist, records){
         }
     }
 
-    const message = "All good";
     return {
         "status": 200,
-        "message": message
+        "message": "Added to hotlist successfully"
     }
 }
