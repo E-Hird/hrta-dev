@@ -27,7 +27,7 @@ function getDateString(date){
  */
 function checkFormSubmission(formData, fractional=false){
     // List of fields that should be present in the formData
-    const fields = ["fname", "lname", "email", "linkedIn", "resume", "location", "jobTitle", "industry", "company",
+    const fields = ["fname", "lname", "email", "linkedIn", "resume", "city", "state", "country", "jobTitle", "industry", "company",
         "boss", "responsibilities", "teamsAndFunctions", "challengesSolved", "fixBuildImprove", "outcomes", "problemSolving",
         "keySystems", "workInterest", "companyInterest", "workTypePreference",
     ]
@@ -91,7 +91,7 @@ function createResponseFile(formData){
     Name: ${formData.get("fname")} ${formData.get("lname")}
     Email: ${formData.get("email")}
     LinkedIn: ${formData.get("linkedIn")}
-    Location: ${formData.get("location")}
+    Location: ${formData.get("city")}, ${formData.get("state")}, ${formData.get("country")}
     Job Title: ${formData.get("jobTitle")}
     Industry: ${formData.get("industry")}
     Company: ${formData.get("company")}
@@ -245,6 +245,13 @@ export async function fractionalSubmission(accessToken, formData){
         "first_name": formData.get("fname"),
         "last_name": formData.get("lname"),
         "linked_in": formData.get("linkedIn"),
+        "work_history_update": {
+            "title": formData.get("jobTitle"),
+            "description": formData.get("responsibilities"),
+            "company_name": formData.get("company"),
+            "is_present_job": true
+        },
+        "sourced_from": "Website - Fractional Form"
     }
     // Check if the email field is already in the record
     const submissionEmail = formData.get("email")
