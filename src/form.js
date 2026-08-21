@@ -235,21 +235,38 @@ export async function fractionalSubmission(accessToken, formData){
         }
         foundRecord = true;
     }
-    const personId = searchResults["entries"][0]["id"]
+    const personRecord = searchResults["entries"][0]
+    const personId = personRecord["id"]
 
     // Update the record with extra details
     console.log(`${submissionID}: Updating person`)
+    // Create the update body
     const updateBody = {
         "first_name": formData.get("fname"),
         "last_name": formData.get("lname"),
         "linked_in": formData.get("linkedIn"),
-        "email_addresses_attributes": [{
+    }
+    // Check if the email field is already in the record
+    const submissionEmail = formData.get("email")
+    const recordEmails = personRecord["email_addresses_attributes"]
+    var recordHasEmail = false;
+    for (var email of recordEmails){
+        if (email["email"].valueOf() == submissionEmail.valueOf()){
+            console.log("Record already has email")
+            recordHasEmail = true
+            break
+        }
+    }
+    if (!recordHasEmail){
+        console.log("Adding extra email")
+        updateBody["email_addresses_attributes"] = [{
             "primary": true,
             "type": "work",
             "email": formData.get("email"),
             "do_not_email": false
         }]
     }
+    // Attempt to push the updates
     const resPersonUpdate = await fetch(`https://bb3api.topechelon.com/public/v1/people/${personId}`, {
         method: "PUT",
         headers: {
