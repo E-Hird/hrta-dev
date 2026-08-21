@@ -37,7 +37,7 @@ function checkFormSubmission(formData, fractional=false){
     for (let field of fields){
         if (!formData.has(field)){
             status = 400;
-            missingFieldString.concat(`${field}, `)
+            missingFieldString += `${field}, `
         }
     }
     if (status === 400){
@@ -245,6 +245,9 @@ export async function fractionalSubmission(accessToken, formData){
         "first_name": formData.get("fname"),
         "last_name": formData.get("lname"),
         "linked_in": formData.get("linkedIn"),
+        "city": formData.get("city"),
+        "state": formData.get("state"),
+        "country": formData.get("country"), 
         "work_history_update": {
             "title": formData.get("jobTitle"),
             "description": formData.get("responsibilities"),
