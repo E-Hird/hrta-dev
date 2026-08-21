@@ -248,17 +248,15 @@ export async function fractionalSubmission(accessToken, formData){
     }
     // Check if the email field is already in the record
     const submissionEmail = formData.get("email")
-    const recordEmails = personRecord["email_addresses_attributes"]
+    const recordEmails = personRecord["email_addresses"]
     var recordHasEmail = false;
     for (var email of recordEmails){
         if (email["email"].valueOf() == submissionEmail.valueOf()){
-            console.log("Record already has email")
             recordHasEmail = true
             break
         }
     }
     if (!recordHasEmail){
-        console.log("Adding extra email")
         updateBody["email_addresses_attributes"] = [{
             "primary": true,
             "type": "work",
