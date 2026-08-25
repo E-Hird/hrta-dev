@@ -6,6 +6,7 @@
  * Env vars required: USER_ID
  */
 
+import { findDuplicatesTE } from "./admin.js";
 import { getAccessTokenTE, newAccessToken } from "./authenticate.js";
 import { fractionalSubmission } from "./form.js";
 
@@ -50,8 +51,8 @@ export default {
          * Responses:
          * - 200: submission accepted and forwarded
          * - 400: error submission was malformed
-         * - 405: incorrect method used
          * - 403: incorrect origin used (not from website)
+         * - 405: incorrect method used
          * - 500: repeated error(s) submitting form
          */
         case "/fractional":
@@ -136,6 +137,28 @@ export default {
           }
           break; 
         
+        /**
+         * Responses:
+         * - 200: the dictionary of people with duplicate records
+         * - 403: incorrect origin used (not from website)
+         * - 405: incorrect method used
+         */
+        case "/admin/duplicates":
+          console.log("Got admin request: Identify duplicates")
+          if (request.method !== "GET") {
+            return new Response("Method not allowed", { status: 405 });
+          }
+
+          const origin = request.headers.get("Origin");
+          if (origin !== "https://www.hrtalentalliance.com") {
+            return new Response("Forbidden", { status : 403 });
+          }
+
+          const accessToken = await getAccessTokenTE(env, userId);
+          const duplicates = await findDuplicatesTE(accessToken);
+
+          return new Response(duplicates, {status: 200})
+
         default:
           return new Response("Page not found", { status: 404 })
       }
