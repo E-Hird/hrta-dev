@@ -13,7 +13,8 @@ import { fractionalSubmission } from "./form.js";
 export default {
 	async fetch(request, env, ctx) {
     const url = new URL(request.url);
-    const userId = env.USER_ID
+    const userId = env.USER_ID;
+    const origin = request.headers.get("Origin");
 
     // Handle CORS for preflight requests
     if (request.method === "OPTIONS") {
@@ -43,7 +44,7 @@ export default {
          * - 200: access token refreshed successfully
          */
         case "/refresh-token":
-          const accessToken = await getAccessTokenTE(env, userId);
+          var accessToken = await getAccessTokenTE(env, userId);
           console.log(`Access token: ${accessToken}`)
           return new Response("Token refreshed, check KV", { status: 200 })
 
@@ -61,7 +62,6 @@ export default {
             return new Response("Method not allowed", { status: 405 });
           }
 
-          const origin = request.headers.get("Origin");
           if (origin !== "https://www.hrtalentalliance.com") {
             return new Response("Forbidden", { status : 403 });
           }
@@ -84,7 +84,7 @@ export default {
             }
 
             // Get the access token for Top Echelon
-            const accessToken = await getAccessTokenTE(env, userId);
+            var accessToken = await getAccessTokenTE(env, userId);
             // Attempt to submit the fractional form
             const createPerson = await fractionalSubmission(accessToken, formData);
             // Handle results of form submission
@@ -149,15 +149,34 @@ export default {
             return new Response("Method not allowed", { status: 405 });
           }
 
-          const origin = request.headers.get("Origin");
           if (origin !== "https://www.hrtalentalliance.com") {
             return new Response("Forbidden", { status : 403 });
           }
 
-          const accessToken = await getAccessTokenTE(env, userId);
+          var accessToken = await getAccessTokenTE(env, userId);
           const duplicates = await findDuplicatesTE(accessToken);
+          // Handle errors
+          if (duplicates["status"] !== 200){
+            console.error(`Error ${duplicates["status"]}: ${duplicates["message"]}`)
+            return new Response("Server Error", {
+              status: 500,
+              headers: {
+                "Access-Control-Allow-Origin": "https://www.hrtalentalliance.com",
+                "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization",
+              },
+            })
+          }
 
-          return new Response(duplicates, {status: 200})
+          // On success return the map as a json object
+          return new Response(JSON.stringify(Object.fromEntries(duplicates["duplicates"])), {
+            status: 200,
+            headers: {
+              "Access-Control-Allow-Origin": "https://www.hrtalentalliance.com",
+              "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+              "Access-Control-Allow-Headers": "Content-Type, Authorization",
+            },
+          })
 
         default:
           return new Response("Page not found", { status: 404 })
