@@ -193,6 +193,7 @@ export async function addToHotlist(accessToken, hotlist, records){
             retries = 0;
             continue;
         }
+        const record = records[currentRecord]
         const resAddToHotlist = await fetch(`https://bb3api.topechelon.com/public/v1/hotlists/${hotlistID}/add_record?record_id=${record}`, {
             method: "POST",
             headers: {
