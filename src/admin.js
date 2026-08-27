@@ -158,7 +158,7 @@ async function getHotlistID(accessToken, hotlist){
 export async function addToHotlist(accessToken, hotlist, records){
     // Get the desired hotlist ID
     const hotlistID = await getHotlistID(accessToken, hotlist);
-    if (!hotlist){
+    if (!hotlistID){
         return {
             "status": 500,
             "message": "Hotlist could not be found or created"

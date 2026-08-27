@@ -191,9 +191,10 @@ export default {
           }
 
           const records = await request.json()
+          console.log(records)
 
           var accessToken = await getAccessTokenTE(env, userId);
-          const resHotlist = await addToHotlist(accessToken, records);
+          const resHotlist = await addToHotlist(accessToken, "delete", records);
 
           if (resHotlist["status"] !== 200){
             console.error(`Error adding records to hotlist: ${resHotlist["message"]}`)
