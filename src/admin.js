@@ -166,17 +166,72 @@ export async function addToHotlist(accessToken, hotlist, records){
     }
 
     // Add each record in the list to the hotlist
-    for (let record of records){
+    // for (let record of records){
+    //     const resAddToHotlist = await fetch(`https://bb3api.topechelon.com/public/v1/hotlists/${hotlistID}/add_record?record_id=${record}`, {
+    //         method: "POST",
+    //         headers: {
+    //             "Authorization": `Bearer ${accessToken}`,
+    //         },
+    //     })
+    //     //console.log(`Add response: ${resAddToHotlist.status} ${resAddToHotlist.statusText}`)
+    //     if (resAddToHotlist.status !== 200){
+    //         console.error(`Failed to add record ${record} to hotlist ${hotlist}`)
+    //     }
+    // }
+
+    var totalRecords = records.length;
+    var currentRecord = 0;
+    var retries = 0;
+    // Iterate over each paginated page of results to collect all records
+    while (currentRecord < totalRecords){
+        // After 3 retries throw an error
+        if (retries > 3){
+            console.error("Too many retries")
+            console.error(`Failed to add record ${record} to hotlist ${hotlist}`)
+            // Move onto the next record
+            currentRecord += 1;
+            retries = 0;
+            continue;
+        }
         const resAddToHotlist = await fetch(`https://bb3api.topechelon.com/public/v1/hotlists/${hotlistID}/add_record?record_id=${record}`, {
             method: "POST",
             headers: {
                 "Authorization": `Bearer ${accessToken}`,
             },
         })
-        //console.log(`Add response: ${resAddToHotlist.status} ${resAddToHotlist.statusText}`)
-        if (resAddToHotlist.status !== 200){
-            console.error(`Failed to add record ${record} to hotlist ${hotlist}`)
+        //console.log(`Response: ${currentPage}/${totalPages} ${resAddToHotlist.status} ${resAddToHotlist.statusText}`)
+        // Handle response errors
+        if (resAddToHotlist.status === 429) {
+            retries += 1;
+            const retryAfterHeader = resAddToHotlist.headers.get("Retry-After");
+            const timer = retryTimer(retryAfterHeader);
+            // If timer is created return
+            if (timer) {
+                await timer;
+            } else {
+                console.error("Retry timer broken or too long.")
+                return {
+                    "status": 429,
+                    "message": "Retry timer broken or too long"
+                }
+            }
+            continue;
+        } else if (resAddToHotlist.status === 401) {
+            console.error("Authentication error")
+            return {
+                "status": 401,
+                "message": "Authentication error"
+            }
+        } else if (resAddToHotlist.status != 200) {
+            // By default retry after 5 seconds
+            retries += 1
+            await retryTimer(5);
+            continue;
         }
+
+        // Move onto the next record
+        currentRecord += 1;
+        retries = 0
     }
 
     return {
