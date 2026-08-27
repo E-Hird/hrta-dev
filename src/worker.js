@@ -6,7 +6,7 @@
  * Env vars required: USER_ID
  */
 
-import { findDuplicatesTE } from "./admin.js";
+import { addToHotlist, findDuplicatesTE } from "./admin.js";
 import { getAccessTokenTE, newAccessToken } from "./authenticate.js";
 import { fractionalSubmission } from "./form.js";
 
@@ -177,6 +177,44 @@ export default {
               "Access-Control-Allow-Headers": "Content-Type, Authorization",
             },
           })
+          break;
+
+
+        case "/admin/delete":
+          console.log("Got admin request: Mark for deletion")
+          if (request.method !== "POST") {
+            return new Response("Method not allowed", { status: 405 });
+          }
+
+          if (origin !== "https://www.hrtalentalliance.com") {
+            return new Response("Forbidden", { status : 403 });
+          }
+
+          const records = await request.json()
+
+          var accessToken = await getAccessTokenTE(env, userId);
+          const resHotlist = await addToHotlist(accessToken, records);
+
+          if (resHotlist["status"] !== 200){
+            console.error(`Error adding records to hotlist: ${resHotlist["message"]}`)
+            Response("Server Error please try again later...", {
+              status: 500,
+              headers: {
+                "Access-Control-Allow-Origin": "https://www.hrtalentalliance.com",
+                "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization",
+              },
+            })
+          }
+
+          return new Response("Records added to hotlist.", { 
+            status: 200,
+            headers: {
+              "Access-Control-Allow-Origin": "https://www.hrtalentalliance.com",
+              "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+              "Access-Control-Allow-Headers": "Content-Type, Authorization",
+            },
+          });
 
         default:
           return new Response("Page not found", { status: 404 })
