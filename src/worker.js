@@ -198,7 +198,7 @@ export default {
 
           if (resHotlist["status"] !== 200){
             console.error(`Error adding records to hotlist: ${resHotlist["message"]}`)
-            Response("Server Error please try again later...", {
+            return new Response("Server Error please try again later...", {
               status: 500,
               headers: {
                 "Access-Control-Allow-Origin": "https://www.hrtalentalliance.com",

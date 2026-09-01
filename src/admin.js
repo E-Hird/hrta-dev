@@ -139,7 +139,7 @@ async function getHotlistID(accessToken, hotlist){
             })
         })
         //console.log(`Hotlist create response: ${resHotlistCreate.status} ${resHotlistCreate.statusText}`)
-        if (resHotlistCreate.status !== 200){
+        if (resHotlistCreate.status !== 201){
             console.error(`Hotlist ${hotlist} could not be created.`)
             return false
         }
@@ -165,19 +165,6 @@ export async function addToHotlist(accessToken, hotlist, records){
         }
     }
 
-    // Add each record in the list to the hotlist
-    // for (let record of records){
-    //     const resAddToHotlist = await fetch(`https://bb3api.topechelon.com/public/v1/hotlists/${hotlistID}/add_record?record_id=${record}`, {
-    //         method: "POST",
-    //         headers: {
-    //             "Authorization": `Bearer ${accessToken}`,
-    //         },
-    //     })
-    //     //console.log(`Add response: ${resAddToHotlist.status} ${resAddToHotlist.statusText}`)
-    //     if (resAddToHotlist.status !== 200){
-    //         console.error(`Failed to add record ${record} to hotlist ${hotlist}`)
-    //     }
-    // }
 
     var totalRecords = records.length;
     var currentRecord = 0;
