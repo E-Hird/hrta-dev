@@ -89,3 +89,7 @@ export async function newAccessToken(env, code, userId) {
     await env.TOKEN_KV.put(`tokens:${userId}`, JSON.stringify(newTokens))
     return resAuthToken.status
 }
+
+export async function getAccessTokenN(env, code, userId) {
+    return env.NOTION_KEY_TEST
+}
