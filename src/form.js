@@ -128,11 +128,141 @@ function createResponseFile(formData){
     `;
     // Turn text into a file format
     const responseBlob = new Blob([content], { type: "text/plain" })
+    return responseBlob;
+}
 
+/**
+ * Creates/updates a record in Top Echelon from a candidate resume.
+ * @param {string} accessToken 
+ * @param {File} resumeFile 
+ * @returns Status of the API request
+ */
+async function parseFromResumeTE(accessToken, resumeFile){
+    const fileForm = new FormData();
+    fileForm.append("file", resumeFile, resumeFile.name)
+
+    const resParseResume = await fetch("https://bb3api.topechelon.com/public/v1/people/parse", {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${accessToken}`,
+        },
+        body: fileForm
+    })
+    // console.log(`Parse response: ${resParseResume.status} ${resParseResume.statusText}`)
+    return resParseResume.status;
+}
+
+/**
+ * Locates a Top Echelon Record matching a `person_search` body
+ * @param {string} accessToken 
+ * @param {Object} searchFilters 
+ * @param {string} sort_by 
+ * @param {string} sort_order 
+ * @returns {Object} status object containing the located record.
+ */
+async function findRecordTE(accessToken, searchFilters, sort_by="date_added", sort_order="desc"){
+    const statusObject = {
+        "status": 500,
+        "message": "Search Incomplete",
+        "result": null
+    }
+    var foundRecord = false;
+    var retries = 0;
+    var searchResults = null;
+    // Locating the record may take multiple attempts
+    while (!foundRecord){
+        // If the record isn't found after 3 reties then return an error
+        if (retries > 3){
+            statusObject["status"] = 404;
+            statusObject["message"] = "Person record not found";
+            return statusObject
+        }
+        // Wait for the parsing process to finish
+        const timer = retryTimer(1);
+        // If timer is created wait for it to expire
+        if (timer) {
+            await timer;
+        } else {
+            statusObject["status"] = 500;
+            statusObject["message"] = "Retry timer broken or too long";
+            return statusObject
+        }
+        const resPersonSearch = await fetch("https://bb3api.topechelon.com/public/v1/people/search", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${accessToken}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                "page": 1,
+                "sort_by": sort_by,
+                "sort_order": sort_order,
+                "person_search": searchFilters
+            })
+        })
+        // console.log(`Search response: ${resPersonSearch.status} ${resPersonSearch.statusText}`)
+        if (resPersonSearch.status !== 200){
+            statusObject["status"] = resPersonSearch.status;
+            statusObject["message"] = "Search error"
+            return statusObject
+        }
+
+        searchResults = await resPersonSearch.json()
+        if (searchResults["pagination"]["total_count"] <= 0){
+            retries += 1
+            continue
+        }
+        foundRecord = true;
+    }
+    statusObject["status"] = 200;
+    statusObject["message"] = "Person record found";
+    statusObject["result"] = searchResults["entries"][0];
+    return statusObject
+}
+
+/**
+ * Update the details of a record with ID `personId`.
+ * @param {string} accessToken 
+ * @param {string} personId
+ * @param {Object} updateBody 
+ * @returns Status of the API request
+ */
+async function updateRecordTE(accessToken, personId, updateBody){
+    const resPersonUpdate = await fetch(`https://bb3api.topechelon.com/public/v1/people/${personId}`, {
+        method: "PUT",
+        headers: {
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            "person": updateBody
+        })
+    })
+    // console.log(`Update response: ${resPersonUpdate.status} ${resPersonUpdate.statusText}`)
+    return resPersonUpdate.status
+}
+
+/**
+ * Attaches the file `attachmentFile` to the Top Echelon record associated with `personId`
+ * @param {string} accessToken 
+ * @param {string} personId 
+ * @param {File} attachmentFile 
+ * @param {string} attachmentName 
+ * @returns Status of the API request
+ */
+async function addAttachmentTE(accessToken, personId, attachmentFile, attachmentName){
     // Package the file into FormData for POST
     const deliveryForm = new FormData();
-    deliveryForm.append('file', responseBlob, "responses.txt")
-    return deliveryForm;
+    deliveryForm.append('file', attachmentFile, attachmentName)
+    const resAttachment = await fetch(`https://bb3api.topechelon.com/public/v1/people/${personId}/attachments`, {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${accessToken}`,
+        },
+        body: deliveryForm
+    })
+    // console.log(`Attachment response: ${resAttachment.status} ${resAttachment.statusText}`)
+    return resAttachment.status;
 }
 
 /**
@@ -151,6 +281,7 @@ export async function fractionalSubmission(accessToken, formData){
         "message": "Submission Incomplete"
     }
     console.log(`Processing fractional form submission: ${submissionID}`)
+
     // Check that the form is formatted correctly
     const formCheck = checkFormSubmission(formData, true)
     if (formCheck["status"] !== 200){
@@ -159,83 +290,32 @@ export async function fractionalSubmission(accessToken, formData){
         return statusObject
     }
     console.log("Form checked")
+
     // Parse a new record from the resume file
     const resumeFile = formData.get("resume")
-    const fileForm = new FormData();
-    fileForm.append("file", resumeFile, resumeFile.name)
-
     console.log(`${submissionID}: Parsing resume`)
-    const resParseResume = await fetch("https://bb3api.topechelon.com/public/v1/people/parse", {
-        method: "POST",
-        headers: {
-            "Authorization": `Bearer ${accessToken}`,
-        },
-        body: fileForm
-    })
-    // console.log(`Parse response: ${resParseResume.status} ${resParseResume.statusText}`)
+
+    const resParseResume = await parseFromResumeTE(accessToken, resumeFile)
     if (resParseResume.status !== 201){
         statusObject["status"] = resParseResume.status;
         statusObject["message"] = "Parse error"
         return statusObject
     }
 
-    
     // Find the record that was just created
-    var foundRecord = false;
-    var retries = 0;
-    var searchResults = null;
-    console.log(`${submissionID}: Locating record`)
-    // Locating the record may take multiple attempts
-    while (!foundRecord){
-        // If the record isn't found after 3 reties then return an error
-        if (retries > 3){
-            console.error(`${submissionID}: Too many retries`)
-            statusObject["status"] = 404;
-            statusObject["message"] = "Person record not found";
-            return statusObject
-        }
-        // Wait for the parsing process to finish
-        const timer = retryTimer(1);
-        // If timer is created wait for it to expire
-        if (timer) {
-            await timer;
-        } else {
-            console.error(`${submissionID}:  Retry timer broken or too long.`)
-            statusObject["status"] = 500;
-            statusObject["message"] = "Retry timer broken or too long";
-            return statusObject
-        }
-        const resPersonSearch = await fetch("https://bb3api.topechelon.com/public/v1/people/search", {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${accessToken}`,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                "page": 1,
-                "sort_by": "date_added",
-                "sort_order": "desc",
-                "person_search": {
-                    "keyword": `${formData.get("fname")} ${formData.get("lname")}`,
-                    "minimum_date_modified": getDateString(new Date(Date.now())),
-                }
-            })
-        })
-        // console.log(`Search response: ${resPersonSearch.status} ${resPersonSearch.statusText}`)
-        if (resPersonSearch.status !== 200){
-            statusObject["status"] = resPersonSearch.status;
-            statusObject["message"] = "Search error"
-            return statusObject
-        }
-
-        searchResults = await resPersonSearch.json()
-        if (searchResults["pagination"]["total_count"] <= 0){
-            retries += 1
-            continue
-        }
-        foundRecord = true;
+    const searchFilter = {
+        "keyword": `${formData.get("fname")} ${formData.get("lname")}`,
+        "minimum_date_modified": getDateString(new Date(Date.now())),
     }
-    const personRecord = searchResults["entries"][0]
+    console.log(`${submissionID}: Locating record`)
+
+    const resPersonSearch = findRecordTE(accessToken, searchFilter)
+    if (resPersonSearch !== 200){
+        statusObject["status"] = resParseResume.status;
+        statusObject["message"] = "Search error"
+        return statusObject
+    }
+    const personRecord = resPersonSearch["result"]
     const personId = personRecord["id"]
 
     // Update the record with extra details
@@ -275,18 +355,8 @@ export async function fractionalSubmission(accessToken, formData){
         }]
     }
     // Attempt to push the updates
-    const resPersonUpdate = await fetch(`https://bb3api.topechelon.com/public/v1/people/${personId}`, {
-        method: "PUT",
-        headers: {
-            "Authorization": `Bearer ${accessToken}`,
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            "person": updateBody
-        })
-    })
-    // console.log(`Update response: ${resPersonUpdate.status} ${resPersonUpdate.statusText}`)
-    if (resPersonUpdate.status !== 200){
+    const resPersonUpdate = updateRecordTE(accessToken, personId, updateBody)
+    if (resPersonUpdate !== 200){
         statusObject["status"] = resPersonUpdate.status;
         statusObject["message"] = "Update error"
         return statusObject
@@ -294,15 +364,9 @@ export async function fractionalSubmission(accessToken, formData){
 
     // Create an attachment with form response
     console.log(`${submissionID}: Adding attachment`)
-    const resAttachment = await fetch(`https://bb3api.topechelon.com/public/v1/people/${personId}/attachments`, {
-        method: "POST",
-        headers: {
-            "Authorization": `Bearer ${accessToken}`,
-        },
-        body: createResponseFile(formData)
-    })
-    // console.log(`Attachment response: ${resAttachment.status} ${resAttachment.statusText}`)
-    if (resAttachment.status !== 201){
+    const responseFile = createResponseFile(formData)
+    const resAttachment = addAttachmentTE(accessToken, personId, responseFile, "responses.txt")
+    if (resAttachment !== 201){
         statusObject["status"] = resAttachment.status;
         statusObject["message"] = "Attachment error";
         return statusObject

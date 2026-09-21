@@ -47,7 +47,7 @@ async function updateToken(env, tokens){
 }
 
 /**
- * Deliver a valid authentication token to the worker.
+ * Deliver a valid authentication token for top echelon to the worker.
  * @param {Object} env
  * @param {string} userId 
  * @returns {string} A valid access token
@@ -90,6 +90,12 @@ export async function newAccessToken(env, code, userId) {
     return resAuthToken.status
 }
 
-export async function getAccessTokenN(env, code, userId) {
+/**
+ * Get the access token for notion API.
+ * @param {Object} env 
+ * @param {string} userId 
+ * @returns 
+ */
+export async function getAccessTokenN(env, userId) {
     return env.NOTION_KEY_TEST
 }
