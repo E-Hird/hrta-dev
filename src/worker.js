@@ -6,7 +6,7 @@
  * Env vars required: USER_ID
  */
 
-import { addToHotlist, findDuplicatesTE } from "./admin.js";
+import { addToHotlistTE, findDuplicatesTE } from "./admin.js";
 import { getAccessTokenTE, newAccessToken } from "./authenticate.js";
 import { fractionalSubmission } from "./form.js";
 
@@ -194,7 +194,7 @@ export default {
           console.log(records)
 
           var accessToken = await getAccessTokenTE(env, userId);
-          const resHotlist = await addToHotlist(accessToken, "delete", records);
+          const resHotlist = await addToHotlistTE(accessToken, "delete", records);
 
           if (resHotlist["status"] !== 200){
             console.error(`Error adding records to hotlist: ${resHotlist["message"]}`)

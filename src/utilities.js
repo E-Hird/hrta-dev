@@ -39,3 +39,12 @@ export function retryTimer(retryAfterHeader){
 export function uid(){
     return Date.now().toString(36) + Math.random().toString(36).substring(2);
 }
+
+/**
+ * Parse a Date object to a string of format `YYYY-MM-DD`
+ * @param {Date} date
+ * @returns The a string in format YYYY-MM-DD
+ */
+export function getDateString(date){
+    return `${String(date.getFullYear()).padStart(4, "0")}-${String(date.getMonth()).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+}

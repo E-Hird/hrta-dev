@@ -7,17 +7,8 @@
  * env vars required: None
  */
 
-import { addToHotlist } from "./admin.js";
-import { uid, retryTimer } from "./utilities.js";
-
-/**
- * Parse a Date object to a string of format `YYYY-MM-DD`
- * @param {Date} date
- * @returns The a string in format YYYY-MM-DD
- */
-function getDateString(date){
-    return `${String(date.getFullYear()).padStart(4, "0")}-${String(date.getMonth()).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
-}
+import { addToHotlistTE } from "./database-actions.js";
+import { uid, retryTimer, getDateString } from "./utilities.js";
 
 /**
  * Checks if the contents of the form fits requirements.
@@ -132,140 +123,6 @@ function createResponseFile(formData){
 }
 
 /**
- * Creates/updates a record in Top Echelon from a candidate resume.
- * @param {string} accessToken 
- * @param {File} resumeFile 
- * @returns Status of the API request
- */
-async function parseFromResumeTE(accessToken, resumeFile){
-    const fileForm = new FormData();
-    fileForm.append("file", resumeFile, resumeFile.name)
-
-    const resParseResume = await fetch("https://bb3api.topechelon.com/public/v1/people/parse", {
-        method: "POST",
-        headers: {
-            "Authorization": `Bearer ${accessToken}`,
-        },
-        body: fileForm
-    })
-    // console.log(`Parse response: ${resParseResume.status} ${resParseResume.statusText}`)
-    return resParseResume.status;
-}
-
-/**
- * Locates a Top Echelon Record matching a `person_search` body
- * @param {string} accessToken 
- * @param {Object} searchFilters 
- * @param {string} sort_by 
- * @param {string} sort_order 
- * @returns {Object} status object containing the located record.
- */
-async function findRecordTE(accessToken, searchFilters, sort_by="date_added", sort_order="desc"){
-    const statusObject = {
-        "status": 500,
-        "message": "Search Incomplete",
-        "result": null
-    }
-    var foundRecord = false;
-    var retries = 0;
-    var searchResults = null;
-    // Locating the record may take multiple attempts
-    while (!foundRecord){
-        // If the record isn't found after 3 reties then return an error
-        if (retries > 3){
-            statusObject["status"] = 404;
-            statusObject["message"] = "Person record not found";
-            return statusObject
-        }
-        // Wait for the parsing process to finish
-        const timer = retryTimer(1);
-        // If timer is created wait for it to expire
-        if (timer) {
-            await timer;
-        } else {
-            statusObject["status"] = 500;
-            statusObject["message"] = "Retry timer broken or too long";
-            return statusObject
-        }
-        const resPersonSearch = await fetch("https://bb3api.topechelon.com/public/v1/people/search", {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${accessToken}`,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                "page": 1,
-                "sort_by": sort_by,
-                "sort_order": sort_order,
-                "person_search": searchFilters
-            })
-        })
-        // console.log(`Search response: ${resPersonSearch.status} ${resPersonSearch.statusText}`)
-        if (resPersonSearch.status !== 200){
-            statusObject["status"] = resPersonSearch.status;
-            statusObject["message"] = "Search error"
-            return statusObject
-        }
-
-        searchResults = await resPersonSearch.json()
-        if (searchResults["pagination"]["total_count"] <= 0){
-            retries += 1
-            continue
-        }
-        foundRecord = true;
-    }
-    statusObject["status"] = 200;
-    statusObject["message"] = "Person record found";
-    statusObject["result"] = searchResults["entries"][0];
-    return statusObject
-}
-
-/**
- * Update the details of a record with ID `personId`.
- * @param {string} accessToken 
- * @param {string} personId
- * @param {Object} updateBody 
- * @returns Status of the API request
- */
-async function updateRecordTE(accessToken, personId, updateBody){
-    const resPersonUpdate = await fetch(`https://bb3api.topechelon.com/public/v1/people/${personId}`, {
-        method: "PUT",
-        headers: {
-            "Authorization": `Bearer ${accessToken}`,
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            "person": updateBody
-        })
-    })
-    // console.log(`Update response: ${resPersonUpdate.status} ${resPersonUpdate.statusText}`)
-    return resPersonUpdate.status
-}
-
-/**
- * Attaches the file `attachmentFile` to the Top Echelon record associated with `personId`
- * @param {string} accessToken 
- * @param {string} personId 
- * @param {File} attachmentFile 
- * @param {string} attachmentName 
- * @returns Status of the API request
- */
-async function addAttachmentTE(accessToken, personId, attachmentFile, attachmentName){
-    // Package the file into FormData for POST
-    const deliveryForm = new FormData();
-    deliveryForm.append('file', attachmentFile, attachmentName)
-    const resAttachment = await fetch(`https://bb3api.topechelon.com/public/v1/people/${personId}/attachments`, {
-        method: "POST",
-        headers: {
-            "Authorization": `Bearer ${accessToken}`,
-        },
-        body: deliveryForm
-    })
-    // console.log(`Attachment response: ${resAttachment.status} ${resAttachment.statusText}`)
-    return resAttachment.status;
-}
-
-/**
  * Processes a submission from the fractional form. Checks the validity of the form,
  * parses the resume uploaded, finds the parsed record, updates any extra details,
  * adds the form response as an attachment. (All in TopEchelon).
@@ -374,7 +231,7 @@ export async function fractionalSubmission(accessToken, formData){
 
     // Add to the fractional work hotlist
     console.log(`${submissionID}: Adding to fractional hotlist`)
-    const hotlistRes = await addToHotlist(accessToken, "fractional", [personId])
+    const hotlistRes = await addToHotlistTE(accessToken, "fractional", [personId])
     if (hotlistRes["status"] !== 200){
         statusObject["status"] = hotlistRes["status"];
         statusObject["message"] = hotlistRes["message"];
