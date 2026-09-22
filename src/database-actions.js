@@ -178,6 +178,7 @@ export async function getHotlistRecordsTE(accessToken, hotlist, type="person"){
             "message": "Hotlist contains no records"
         }
     }
+    // Return the records if successfully found
     return {
         "status": 200,
         "message": "Found Hotlist records",

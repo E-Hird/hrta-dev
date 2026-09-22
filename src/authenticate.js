@@ -2,11 +2,13 @@
  * Authentication
  * 
  * A collection of utility functions for managing authentication tokens.
- * Creates, maintains and provides authentication tokens for Top Echelon.
+ * Creates, maintains and provides authentication tokens for Top Echelon and Notion.
  * 
- * env vars required: TOKEN_KV, CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
+ * env vars required: TOKEN_KV, CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, NOTION_KEY
  */
 
+
+// ========================================================Top Echelon=========================================================
 
 /**
  * Checks if a token has expired.
@@ -30,7 +32,7 @@ function isExpired(tokens){
  * @param {string} userId 
  * @returns {Object} JSON body of new tokens
  */
-async function updateToken(env, tokens){
+async function updateAccessTokenTE(env, tokens){
     const resAuthToken = await fetch("https://bb3api.topechelon.com/top_echelon_provider/oauth/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -57,7 +59,7 @@ export async function getAccessTokenTE(env, userId) {
 
   if (isExpired(tokens)) {
     console.log("Token is expired")
-    const newTokens = await updateToken(env, tokens)
+    const newTokens = await updateAccessTokenTE(env, tokens)
     // Store new token locally
     await env.TOKEN_KV.put(`tokens:${userId}`, JSON.stringify(newTokens));
     return newTokens.access_token;
@@ -73,7 +75,7 @@ export async function getAccessTokenTE(env, userId) {
  * @param {string} userId 
  * @returns {status} The status of the fetch response
  */
-export async function newAccessToken(env, code, userId) {
+export async function newAccessTokenTE(env, code, userId) {
     const resAuthToken = await fetch("https://bb3api.topechelon.com/top_echelon_provider/oauth/token", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -90,6 +92,8 @@ export async function newAccessToken(env, code, userId) {
     return resAuthToken.status
 }
 
+// ===========================================================Notion===========================================================
+
 /**
  * Get the access token for notion API.
  * @param {Object} env 
@@ -97,5 +101,17 @@ export async function newAccessToken(env, code, userId) {
  * @returns 
  */
 export async function getAccessTokenN(env, userId) {
-    return env.NOTION_KEY_TEST
+    return env.TOKEN_KV.get(`notion_pat:${userId}`)
+}
+
+/**
+ * Updates the Personal Access Token for notion.
+ * @param {Object} env 
+ * @param {string} userId 
+ * @param {string} newToken 
+ * @returns true
+ */
+export async function updateAccessTokenN(env, userId, newToken) {
+    env.TOKEN_KV.put(`notion_pat:${userId}`, newToken)
+    return true
 }

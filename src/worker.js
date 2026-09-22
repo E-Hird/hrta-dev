@@ -7,7 +7,7 @@
  */
 
 import { addToHotlistTE, findDuplicatesTE } from "./admin.js";
-import { getAccessTokenTE, newAccessToken } from "./authenticate.js";
+import { getAccessTokenTE, newAccessTokenTE, getAccessTokenN, updateAccessTokenN } from "./authenticate.js";
 import { fractionalSubmission } from "./form.js";
 
 export default {
@@ -36,17 +36,33 @@ export default {
          */
         case "/topechelon/callback":
           const tokenCode = url.searchParams.get("code");
-          const resStatus = await newAccessToken(env, tokenCode, userId)
+          const resStatus = await newAccessTokenTE(env, tokenCode, userId)
           return new Response(`Response: ${resStatus}`, { status: resStatus })
 
         /**
          * Responses:
          * - 200: access token refreshed successfully
          */
-        case "/refresh-token":
+        case "/refresh-token-te":
           var accessToken = await getAccessTokenTE(env, userId);
-          console.log(`Access token: ${accessToken}`)
           return new Response("Token refreshed, check KV", { status: 200 })
+
+        case "/update-token-n":
+          if (request.method !== "POST") {
+            return new Response("Method not allowed", { status: 405 });
+          }
+
+          if (origin !== "https://www.hrtalentalliance.com") {
+            return new Response("Forbidden", { status : 403 });
+          }
+
+          const newToken = await request.text();
+          if (newToken.startWith("ntn_")) {
+            return new Response("Invalid token detected", { status: 400 })
+          }
+
+          updateAccessTokenN(env, userId, newToken)
+          return new Response("PAT updates successfully.", { status: 200 })
 
         /**
          * Responses:
