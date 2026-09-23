@@ -331,6 +331,38 @@ export async function addAttachmentTE(accessToken, personId, attachmentFile, att
 
 // ===========================================================Notion===========================================================
 
-export async function getTrackedDatabases(env){
+/**
+ * Get a list of the names of the Notion databases currently being tracked
+ * @param {Object} env 
+ * @returns A list of names of databases currently being tracked
+ */
+export async function getTrackedDatabasesN(env){
     return await env.DATABASE_IDS.list();
+}
+
+/**
+ * Add or update a key to contain the ID for a different Database
+ * @param {Object} env 
+ * @param {string} key 
+ * @param {string} id 
+ * @returns `true` on success
+ */
+export async function trackNewDatabaseN(env, key, id){
+    await env.DATABASE_IDS.put(key, id);
+    return true
+}
+
+/**
+ * Get the ID of the database stored under `key`
+ * @param {Object} env 
+ * @param {string} key 
+ * @returns The ID of the requested database 
+ */
+export async function getDatabaseIdN(env, key){
+    const id = await env.DATABASE_IDS.get(key)
+    if (id){
+        return id
+    } else {
+        return false
+    }
 }
