@@ -101,7 +101,7 @@ export async function newAccessTokenTE(env, code, userId) {
  * @returns 
  */
 export async function getAccessTokenN(env, userId) {
-    return env.TOKEN_KV.get(`notion_pat:${userId}`)
+    return await env.TOKEN_KV.get(`notion_pat:${userId}`)
 }
 
 /**
@@ -112,6 +112,6 @@ export async function getAccessTokenN(env, userId) {
  * @returns true
  */
 export async function updateAccessTokenN(env, userId, newToken) {
-    env.TOKEN_KV.put(`notion_pat:${userId}`, newToken)
+    await env.TOKEN_KV.put(`notion_pat:${userId}`, newToken)
     return true
 }
