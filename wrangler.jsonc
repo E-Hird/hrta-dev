@@ -19,6 +19,11 @@
 	},
 	"kv_namespaces": [
 		{
+			"binding": "DATABASE_IDS",
+			"id": "506760fe7adc45c99ce7bf7cf805d424",
+			"remote": true
+		},
+		{
 			"binding": "TOKEN_KV",
 			"id": "8f3fa439417f427393c46d5756c777fd",
 			"remote": true

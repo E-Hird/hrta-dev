@@ -145,7 +145,13 @@ export async function addToHotlistTE(accessToken, hotlist, records, type="person
     }
 }
 
-
+/**
+ * Gets all records belonging to a desired hotlist
+ * @param {string} accessToken 
+ * @param {string} hotlist 
+ * @param {string} type 
+ * @returns {Object} A status object containing the results in `"results"`
+ */
 export async function getHotlistRecordsTE(accessToken, hotlist, type="person"){
     // Get the desired hotlist ID
     const hotlistID = await getHotlistIdTE(accessToken, hotlist, type);
@@ -324,3 +330,7 @@ export async function addAttachmentTE(accessToken, personId, attachmentFile, att
 
 
 // ===========================================================Notion===========================================================
+
+export async function getTrackedDatabases(env){
+    return await env.DATABASE_IDS.list();
+}
