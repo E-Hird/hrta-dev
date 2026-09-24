@@ -342,13 +342,27 @@ export async function getTrackedDatabasesN(env){
 
 /**
  * Add or update a key to contain the ID for a different Database
+ * @param {string} accessToken
  * @param {Object} env 
  * @param {string} key 
  * @param {string} id 
- * @returns `true` on success
+ * @returns `true` on success, `false` otherwise
  */
-export async function trackNewDatabaseN(env, key, id){
-    await env.DATABASE_IDS.put(key, id);
+export async function trackNewDatabaseN(accessToken, env, key, id){
+    const resDatabase = await fetch(`https://api.notion.com/v1/databases/${id}`, {
+        method: "GET",
+        headers: {
+            "Authorization": `Bearer ${accessToken}`,
+            "Notion-Version": "2026-03-11"
+        }
+    })
+    if (resDatabase.status !== 200){
+        console.error("Error getting Datasource ID")
+        return false
+    }
+    const data = await resDatabase.json();
+    const datasourceId = data["data_sources"][0]["id"]
+    await env.DATABASE_IDS.put(key, datasourceId);
     return true
 }
 
@@ -365,4 +379,75 @@ export async function getDatabaseIdN(env, key){
     } else {
         return false
     }
+}
+
+export async function addRecordN(accessToken, databaseId, ){
+
+}
+
+export async function logActionN(accessToken, recordId, ){
+
+}
+
+export async function updateRecordN(accessToken, recordId, ){
+
+}
+
+export async function getFilteredRecordsN(accessToken, databaseId, filter, sorts){
+    const results = []
+    const cursor = null;
+
+    do {
+        const body = {
+            "sorts": sorts,
+            "filter": filter,
+            "page_size": 100,
+            "is_archived": false,
+        }
+        if (cursor) body["start_cursor"] = cursor;
+
+        const resRecords = await fetch(`https://api.notion.com/v1/data_sources/${databaseId}/query`, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${accessToken}`,
+                "Content-Type": "application/json",
+                "Notion-Version": "2026-03-11",
+            },
+            body: {
+                "sorts": sorts,
+                "filter": filter,
+                "is_archived": "false",
+            },
+        })
+        console.log(`Query Database Response: ${resRecords.status} - ${resRecords.statusText}`)
+        
+        if (resRecords.status !== 200){
+            return {
+                "status": resRecords.status,
+                "message": "Failed to query database"
+            }
+        }
+        const data = await resRecords.json();
+        results = results.concat(data["results"])
+        cursor = data["has_more"] ? data["next_cursor"] : null
+
+    } while (cursor);
+    
+    return {
+        "status": 200,
+        "message": "Records found successfully",
+        "results": results
+    };
+}
+
+export async function getRecordHistory(){
+
+}
+
+export async function highlightRecordN(){
+
+}
+
+export async function getHighlightedRecordsN(){
+    
 }
