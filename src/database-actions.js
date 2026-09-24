@@ -394,8 +394,8 @@ export async function updateRecordN(accessToken, recordId, ){
 }
 
 export async function getFilteredRecordsN(accessToken, databaseId, filter, sorts){
-    const results = []
-    const cursor = null;
+    var results = []
+    var cursor = null;
 
     do {
         const body = {
@@ -449,5 +449,5 @@ export async function highlightRecordN(){
 }
 
 export async function getHighlightedRecordsN(){
-    
+
 }

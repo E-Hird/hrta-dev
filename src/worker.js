@@ -6,7 +6,8 @@
  * Env vars required: USER_ID
  */
 
-import { addToHotlistTE, findDuplicatesTE } from "./admin.js";
+import { findDuplicatesTE } from "./admin.js";
+import { addToHotlistTE } from "./database-actions.js"
 import { getAccessTokenTE, newAccessTokenTE, getAccessTokenN, updateAccessTokenN } from "./authenticate.js";
 import { fractionalSubmission } from "./form.js";
 
@@ -57,7 +58,7 @@ export default {
           }
 
           const newToken = await request.text();
-          if (newToken.startWith("ntn_")) {
+          if (!newToken.startsWith("ntn_")) {
             return new Response("Invalid token detected", { status: 400 })
           }
 
