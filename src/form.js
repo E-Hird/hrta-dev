@@ -7,7 +7,7 @@
  * env vars required: None
  */
 
-import { addToHotlistTE } from "./database-actions.js";
+import { addToHotlistTE, parseFromResumeTE, findRecordTE, updateRecordTE, addAttachmentTE } from "./database-actions.js";
 import { uid, retryTimer, getDateString } from "./utilities.js";
 
 /**

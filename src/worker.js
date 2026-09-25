@@ -273,7 +273,7 @@ export default {
           if (!(input["name"] && input["link"])){
             return new Response("Malformed input", { status: 400 })
           }
-          if (!input[link].startsWith("https://app.notion.com/")) {
+          if (!input["link"].startsWith("https://app.notion.com/")) {
             return new Response("Must include share link", { status: 400 })
           }
 
@@ -282,7 +282,7 @@ export default {
           // Get the ID from the path
           matchId = matchId.split["/"].at(-1)
 
-          var accessTokenN = getAccessTokenN(env, userId)
+          var accessTokenN = await getAccessTokenN(env, userId)
           const newTrack = trackNewDatabaseN(accessTokenN, env, input["name"], matchId)
 
           if (!newTrack) {
