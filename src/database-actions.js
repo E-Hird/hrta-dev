@@ -88,6 +88,7 @@ export async function addToHotlistTE(accessToken, hotlist, records, type="person
     var retries = 0;
     // Iterate over each paginated page of results to collect all records
     while (currentRecord < totalRecords){
+        const record = records[currentRecord]
         // After 3 retries throw an error
         if (retries > 3){
             console.error("Too many retries")
@@ -97,7 +98,6 @@ export async function addToHotlistTE(accessToken, hotlist, records, type="person
             retries = 0;
             continue;
         }
-        const record = records[currentRecord]
         const resAddToHotlist = await fetch(`https://bb3api.topechelon.com/public/v1/hotlists/${hotlistID}/add_record?record_id=${record}`, {
             method: "POST",
             headers: {

@@ -153,8 +153,8 @@ export async function fractionalSubmission(accessToken, formData){
     console.log(`${submissionID}: Parsing resume`)
 
     const resParseResume = await parseFromResumeTE(accessToken, resumeFile)
-    if (resParseResume.status !== 201){
-        statusObject["status"] = resParseResume.status;
+    if (resParseResume !== 201){
+        statusObject["status"] = resParseResume;
         statusObject["message"] = "Parse error"
         return statusObject
     }
@@ -166,9 +166,9 @@ export async function fractionalSubmission(accessToken, formData){
     }
     console.log(`${submissionID}: Locating record`)
 
-    const resPersonSearch = findRecordTE(accessToken, searchFilter)
+    const resPersonSearch = await findRecordTE(accessToken, searchFilter)
     if (resPersonSearch !== 200){
-        statusObject["status"] = resParseResume.status;
+        statusObject["status"] = resParseResume["status"];
         statusObject["message"] = "Search error"
         return statusObject
     }
@@ -212,9 +212,9 @@ export async function fractionalSubmission(accessToken, formData){
         }]
     }
     // Attempt to push the updates
-    const resPersonUpdate = updateRecordTE(accessToken, personId, updateBody)
+    const resPersonUpdate = await updateRecordTE(accessToken, personId, updateBody)
     if (resPersonUpdate !== 200){
-        statusObject["status"] = resPersonUpdate.status;
+        statusObject["status"] = resPersonUpdate;
         statusObject["message"] = "Update error"
         return statusObject
     }
@@ -222,9 +222,9 @@ export async function fractionalSubmission(accessToken, formData){
     // Create an attachment with form response
     console.log(`${submissionID}: Adding attachment`)
     const responseFile = createResponseFile(formData)
-    const resAttachment = addAttachmentTE(accessToken, personId, responseFile, "responses.txt")
+    const resAttachment = await addAttachmentTE(accessToken, personId, responseFile, "responses.txt")
     if (resAttachment !== 201){
-        statusObject["status"] = resAttachment.status;
+        statusObject["status"] = resAttachment;
         statusObject["message"] = "Attachment error";
         return statusObject
     }
