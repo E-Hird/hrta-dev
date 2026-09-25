@@ -337,7 +337,8 @@ export async function addAttachmentTE(accessToken, personId, attachmentFile, att
  * @returns A list of names of databases currently being tracked
  */
 export async function getTrackedDatabasesN(env){
-    return await env.DATABASE_IDS.list();
+    const list = await env.DATABASE_IDS.list();
+    return list["keys"]
 }
 
 /**
@@ -349,6 +350,7 @@ export async function getTrackedDatabasesN(env){
  * @returns `true` on success, `false` otherwise
  */
 export async function trackNewDatabaseN(accessToken, env, key, id){
+    console.log(id)
     const resDatabase = await fetch(`https://api.notion.com/v1/databases/${id}`, {
         method: "GET",
         headers: {
@@ -356,6 +358,7 @@ export async function trackNewDatabaseN(accessToken, env, key, id){
             "Notion-Version": "2026-03-11"
         }
     })
+    console.log(`Status: ${resDatabase.status} ${resDatabase.statusText}`)
     if (resDatabase.status !== 200){
         console.error("Error getting Datasource ID")
         return false
@@ -402,7 +405,7 @@ export async function getFilteredRecordsN(accessToken, databaseId, filter, sorts
             "sorts": sorts,
             "filter": filter,
             "page_size": 100,
-            "is_archived": false,
+            "is_archived": false
         }
         if (cursor) body["start_cursor"] = cursor;
 
@@ -413,15 +416,12 @@ export async function getFilteredRecordsN(accessToken, databaseId, filter, sorts
                 "Content-Type": "application/json",
                 "Notion-Version": "2026-03-11",
             },
-            body: {
-                "sorts": sorts,
-                "filter": filter,
-                "is_archived": "false",
-            },
+            body: JSON.stringify(body)
         })
-        console.log(`Query Database Response: ${resRecords.status} - ${resRecords.statusText}`)
+        console.log(`Query Database Response: ${resRecords.status} ${resRecords.statusText}`)
         
         if (resRecords.status !== 200){
+            console.log(await resRecords.text())
             return {
                 "status": resRecords.status,
                 "message": "Failed to query database"
