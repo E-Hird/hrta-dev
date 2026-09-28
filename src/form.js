@@ -167,7 +167,7 @@ export async function fractionalSubmission(accessToken, formData){
     console.log(`${submissionID}: Locating record`)
 
     const resPersonSearch = await findRecordTE(accessToken, searchFilter)
-    if (resPersonSearch !== 200){
+    if (resPersonSearch["status"] !== 200){
         statusObject["status"] = resParseResume["status"];
         statusObject["message"] = "Search error"
         return statusObject
