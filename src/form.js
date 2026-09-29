@@ -18,10 +18,11 @@ import { uid, retryTimer, getDateString } from "./utilities.js";
  */
 function checkFormSubmission(formData, fractional=false){
     // List of fields that should be present in the formData
-    const fields = ["fname", "lname", "email", "linkedIn", "resume", "city", "state", "country", "jobTitle", "industry", "company",
-        "boss", "responsibilities", "teamsAndFunctions", "challengesSolved", "fixBuildImprove", "outcomes", "problemSolving",
-        "keySystems", "workInterest", "companyInterest", "workTypePreference",
+    const fields = ["fname", "lname", "email", "linkedIn", "resume", "city", "state", "country", 
     ]
+    const fractionalFields = ["jobTitle", "industry", "company", "boss", "responsibilities", "teamsAndFunctions", 
+        "challengesSolved", "fixBuildImprove", "outcomes", "problemSolving","keySystems", "workInterest", 
+        "companyInterest", "workTypePreference"]
     var status = 200;
     // Check if any fields are missing
     var missingFieldString = ""
@@ -29,6 +30,14 @@ function checkFormSubmission(formData, fractional=false){
         if (!formData.has(field)){
             status = 400;
             missingFieldString += `${field}, `
+        }
+    }
+    if (fractional){
+        for (let field of fractionalFields){
+            if (!formData.has(field)){
+                status = 400;
+                missingFieldString += `${field}, `
+            }
         }
     }
     if (status === 400){
@@ -57,11 +66,13 @@ function checkFormSubmission(formData, fractional=false){
     }
 
     // Check that work preference is one of the given options
-    const options = ["On site/In office", "Hybrid", "Remote"]
-    if (!(options.includes(formData.get("workTypePreference")))){
-        return {
-            "status": 400,
-            "message": "Invalid option chosen for work type preference."
+    if (fractional){
+        const options = ["On site/In office", "Hybrid", "Remote"]
+        if (!(options.includes(formData.get("workTypePreference")))){
+            return {
+                "status": 400,
+                "message": "Invalid option chosen for work type preference."
+            }
         }
     }
 
@@ -232,6 +243,115 @@ export async function fractionalSubmission(accessToken, formData){
     // Add to the fractional work hotlist
     console.log(`${submissionID}: Adding to fractional hotlist`)
     const hotlistRes = await addToHotlistTE(accessToken, "fractional", [personId])
+    if (hotlistRes["status"] !== 200){
+        statusObject["status"] = hotlistRes["status"];
+        statusObject["message"] = hotlistRes["message"];
+        return statusObject
+    }
+
+    // If all stages are completed successfully return 200 code
+    statusObject["status"] = 200;
+    statusObject["message"] = "Person record created successfully";
+    return statusObject
+}
+
+
+export async function advisorySubmission(accessToken, formData){
+    const submissionID = uid();
+    const statusObject = {
+        "id": submissionID,
+        "status": 500,
+        "message": "Submission Incomplete"
+    }
+    console.log(`Processing advisory form submission: ${submissionID}`)
+
+    // Check that the form is formatted correctly
+    const formCheck = checkFormSubmission(formData, false)
+    if (formCheck["status"] !== 200){
+        statusObject["status"] = formCheck["status"];
+        statusObject["message"] = formCheck["message"]
+        return statusObject
+    }
+    console.log("Form checked")
+
+    // Parse a new record from the resume file
+    const resumeFile = formData.get("resume")
+    console.log(`${submissionID}: Parsing resume`)
+
+    const resParseResume = await parseFromResumeTE(accessToken, resumeFile)
+    if (resParseResume !== 201){
+        statusObject["status"] = resParseResume;
+        statusObject["message"] = "Parse error"
+        return statusObject
+    }
+
+    // Find the record that was just created
+    const searchFilter = {
+        "keyword": `${formData.get("fname")} ${formData.get("lname")}`,
+        "minimum_date_modified": getDateString(new Date(Date.now())),
+    }
+    console.log(`${submissionID}: Locating record`)
+
+    const resPersonSearch = await findRecordTE(accessToken, searchFilter)
+    if (resPersonSearch["status"] !== 200){
+        statusObject["status"] = resParseResume["status"];
+        statusObject["message"] = "Search error"
+        return statusObject
+    }
+    const personRecord = resPersonSearch["result"]
+    const personId = personRecord["id"]
+
+    // Update the record with extra details
+    console.log(`${submissionID}: Updating person`)
+    // Create the update body
+    const updateBody = {
+        "first_name": formData.get("fname"),
+        "last_name": formData.get("lname"),
+        "linked_in": formData.get("linkedIn"),
+        "city": formData.get("city"),
+        "state": formData.get("state"),
+        "country": formData.get("country"), 
+        "sourced_from": "Website - Advisory Form"
+    }
+    // Check if the email field is already in the record
+    const submissionEmail = formData.get("email")
+    const recordEmails = personRecord["email_addresses"]
+    var recordHasEmail = false;
+    for (var email of recordEmails){
+        if (email["email"].valueOf() == submissionEmail.valueOf()){
+            recordHasEmail = true
+            break
+        }
+    }
+    if (!recordHasEmail){
+        updateBody["email_addresses_attributes"] = [{
+            "primary": true,
+            "type": "work",
+            "email": formData.get("email"),
+            "do_not_email": false
+        }]
+    }
+    // Attempt to push the updates
+    const resPersonUpdate = await updateRecordTE(accessToken, personId, updateBody)
+    if (resPersonUpdate !== 200){
+        statusObject["status"] = resPersonUpdate;
+        statusObject["message"] = "Update error"
+        return statusObject
+    }
+
+    // Create an attachment with form response
+    console.log(`${submissionID}: Adding attachment`)
+    const responseFile = createResponseFile(formData)
+    const resAttachment = await addAttachmentTE(accessToken, personId, responseFile, "responses.txt")
+    if (resAttachment !== 201){
+        statusObject["status"] = resAttachment;
+        statusObject["message"] = "Attachment error";
+        return statusObject
+    }
+
+    // Add to the advisory leads hotlist
+    console.log(`${submissionID}: Adding to Advisory Leads hotlist`)
+    const hotlistRes = await addToHotlistTE(accessToken, "Advisory Leads", [personId])
     if (hotlistRes["status"] !== 200){
         statusObject["status"] = hotlistRes["status"];
         statusObject["message"] = hotlistRes["message"];

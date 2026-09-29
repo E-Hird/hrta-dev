@@ -36,8 +36,8 @@ export default {
          * - 200: access token created successfully
          */
         case "/topechelon/callback":
-          const tokenCode = url.searchParams.get("code");
-          const resStatus = await newAccessTokenTE(env, tokenCode, userId)
+          var tokenCode = url.searchParams.get("code");
+          var resStatus = await newAccessTokenTE(env, tokenCode, userId)
           return new Response(`Response: ${resStatus}`, { status: resStatus })
 
         /**
@@ -64,7 +64,7 @@ export default {
             return new Response("Forbidden", { status : 403 });
           }
 
-          const newToken = await request.text();
+          var newToken = await request.text();
           if (!newToken.startsWith("ntn_")) {
             return new Response("Invalid token detected", { status: 400 })
           }
@@ -90,7 +90,7 @@ export default {
             return new Response("Forbidden", { status : 403 });
           }
 
-          const formData = await request.formData();
+          var formData = await request.formData();
 
           var submitted = false;
           var retries = 0;
@@ -110,9 +110,9 @@ export default {
             // Get the access token for Top Echelon
             var accessTokenTE = await getAccessTokenTE(env, userId);
             // Attempt to submit the fractional form
-            const createPerson = await fractionalSubmission(accessTokenTE, formData);
+            var createPerson = await fractionalSubmission(accessTokenTE, formData);
             // Handle results of form submission
-            const submissionID = createPerson["id"]
+            var submissionID = createPerson["id"]
             switch (createPerson["status"]){
               case 200: // Success
                 console.log(`Submission successful: ${submissionID}`)
@@ -161,6 +161,88 @@ export default {
           }
           break; 
         
+
+        case "/advisory":
+          console.log("Got fractional request.")
+          if (request.method !== "POST") {
+            return new Response("Method not allowed", { status: 405 });
+          }
+
+          if (origin !== "https://www.hrtalentalliance.com") {
+            return new Response("Forbidden", { status : 403 });
+          }
+
+          var formData = await request.formData();
+
+          var submitted = false;
+          var retries = 0;
+          while (!submitted){
+            // Return a server failure if submission hasn't succeeded after 3 tries
+            if (retries > 3){
+              return new Response("Repeated error(s) when submitting", { 
+                status: 500,
+                headers: {
+                  "Access-Control-Allow-Origin": "https://www.hrtalentalliance.com",
+                  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+                  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+                },
+              });
+            }
+
+            // Get the access token for Top Echelon
+            var accessTokenTE = await getAccessTokenTE(env, userId);
+            // Attempt to submit the advisory form
+            var createPerson = await advisorySubmission(accessTokenTE, formData);
+            // Handle results of form submission
+            var submissionID = createPerson["id"]
+            switch (createPerson["status"]){
+              case 200: // Success
+                console.log(`Submission successful: ${submissionID}`)
+                return new Response("Form submitted successfully.", { 
+                  status: 200,
+                  headers: {
+                    "Access-Control-Allow-Origin": "https://www.hrtalentalliance.com",
+                    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+                    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+                  },
+                });
+
+              case 400: // Malformed input
+                console.error(`${submissionID}: Error - malformed input (${createPerson["message"]})`)
+                return new Response(createPerson["message"], { 
+                  status: 400,
+                  headers: {
+                    "Access-Control-Allow-Origin": "https://www.hrtalentalliance.com",
+                    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+                    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+                  },
+                });
+
+              case 403: // Top Echelon account failure
+              case 500: // Top Echelon server error
+                // Abort
+                console.error(`${submissionID}: Top Echelon Server error (${createPerson["message"]}), aborting...`)
+                return new Response(createPerson["message"], { 
+                  status: 500,
+                  headers: {
+                    "Access-Control-Allow-Origin": "https://www.hrtalentalliance.com",
+                    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+                    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+                  },
+                });
+
+              case 401: // Authentication failure
+              case 404: // Not found
+              case 422: // Request unacceptable
+              case 429: // Too many requests
+              default:
+                console.warn(`${submissionID}: Minor error encountered (${createPerson["message"]}), retrying...`)
+                // Retry
+                continue;
+            }
+          }
+          break; 
+
         /**
          * Responses:
          * - 200: the dictionary of people with duplicate records
@@ -178,7 +260,7 @@ export default {
           }
 
           var accessTokenTE = await getAccessTokenTE(env, userId);
-          const duplicates = await findDuplicatesTE(accessTokenTE);
+          var duplicates = await findDuplicatesTE(accessTokenTE);
           // Handle errors
           if (duplicates["status"] !== 200){
             console.error(`Error ${duplicates["status"]}: ${duplicates["message"]}`)
@@ -220,11 +302,11 @@ export default {
             return new Response("Forbidden", { status : 403 });
           }
 
-          const records = await request.json()
+          var records = await request.json()
           console.log(records)
 
           var accessTokenTE = await getAccessTokenTE(env, userId);
-          const resHotlist = await addToHotlistTE(accessTokenTE, "delete", records);
+          var resHotlist = await addToHotlistTE(accessTokenTE, "delete", records);
 
           if (resHotlist["status"] !== 200){
             console.error(`Error adding records to hotlist: ${resHotlist["message"]}`)
@@ -252,8 +334,8 @@ export default {
          * - 200: list of databases delivered successfully
          */
         case "/get-tracked-databases":
-          const databaseList = await getTrackedDatabasesN(env)
-          const names = databaseList.map(obj => obj["name"])
+          var databaseList = await getTrackedDatabasesN(env)
+          var names = databaseList.map(obj => obj["name"])
 
           return new Response(JSON.stringify(names), { status: 200 })
 
@@ -316,7 +398,7 @@ export default {
           console.log(accessTokenN)
           var data = await getFilteredRecordsN(accessTokenN, databaseId, filter, sorts)
           var results = data["results"]
-          const actions = []
+          var actions = []
 
           for (var result of results){
             actions.push(result["properties"]["Name (x if no intake form)"]["title"][0]["plain_text"])
