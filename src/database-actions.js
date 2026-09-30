@@ -384,8 +384,129 @@ export async function getDatabaseIdN(env, key){
     }
 }
 
-export async function addRecordN(accessToken, databaseId, ){
+export async function getDatabaseSchemeN(accessToken, databaseId){
+    const resSchema = await fetch(`https://api.notion.com/v1/data_sources/${databaseId}`, {
+        method: "GET",
+        headers: {
+            "Authorization": `Bearer ${accessToken}`,
+            "Notion-Version": "2026-03-11"
+        }
+    })
+    console.log(`Schema response: ${resSchema.status} ${resSchema.statusText}`)
+    if (resSchema.status !== 200){
+        return {
+            "status": resSchema.status,
+            "message": "Failed to get database Schema"
+        }
+    }
+    const data = await resSchema.json()
+    const schema = data["properties"]
 
+    if (!schema){
+        return {
+            "status": 500,
+            "message": "Database found but schema is missing"
+        }
+    }
+
+    return {
+        "status": 200,
+        "message": "Database schema found.",
+        "schema": schema
+    }
+}
+
+export async function uploadFileN(accessToken, file){
+    if (!file || !(file instanceof File)) {
+        return {
+            "status": 400,
+            "message": "File missing or malformed."
+        }
+    }
+
+    const resCreateUpload = await fetch(`https://api.notion.com/v1/file_uploads`, {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+            "Notion-Version": "2026-03-11"
+        },
+        body: JSON.stringify({
+            "mode": "single_part",
+            "filename": file.name,
+            "content_type": file.type
+        })
+    })
+    console.log(`Create Upload Response: ${resCreateUpload.status} ${resCreateUpload.statusText}`)
+    if (resCreateUpload.status !== 200){
+        return {
+            "status": resCreateUpload.status,
+            "message": "Failed to create File Upload"
+        }
+    }
+    const fileUpload = await resCreateUpload.json()
+    const uploadId = fileUpload["id"]
+    if (!uploadId){
+        return {
+            "status": 500,
+            "message": "Couldn't get file upload ID"
+        }
+    }
+
+    const uploadForm = new FormData();
+    uploadForm.append('file', file, file.name)
+    const resUploadFile = await fetch(`https://api.notion.com/v1/file_uploads/${uploadId}/send`, {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${accessToken}`,
+            "Notion-Version": "2026-03-11"
+        },
+        body: uploadForm
+    })
+    console.log(`Create Upload Response: ${resUploadFile.status} ${resUploadFile.statusText}`)
+    if (resUploadFile.status !== 200){
+        return {
+            "status": resUploadFile.status,
+            "message": "Failed to upload file"
+        }
+    }
+
+    return {
+        "status": 200,
+        "message": "File uploaded successfully",
+        "id": uploadId
+    }
+
+}
+
+export async function addRecordN(accessToken, databaseId, properties){
+    const resNewRecord = await fetch(`https://api.notion.com/v1/pages`, {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+            "Notion-Version": "2026-03-11"
+        },
+        body: JSON.stringify({
+            "parent": {
+                "type": "data_source_id",
+                "data_source_id": databaseId
+            },
+            "properties": properties       
+        })
+    })
+    console.log(`Schema response: ${resSchema.status} ${resSchema.statusText}`)
+    if (resSchema.status !== 200){
+        return {
+            "status": resNewRecord.status,
+            "message": "Failed to create new record"
+        }
+    }
+
+    return {
+        "status": 200,
+        "message": "Record created successfully",
+    }
 }
 
 export async function logActionN(accessToken, recordId, ){
