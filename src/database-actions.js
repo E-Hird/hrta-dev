@@ -384,6 +384,12 @@ export async function getDatabaseIdN(env, key){
     }
 }
 
+/**
+ * Gets the schema for a Notion Database
+ * @param {string} accessToken 
+ * @param {string} databaseId 
+ * @returns Status object containing database schema
+ */
 export async function getDatabaseSchemeN(accessToken, databaseId){
     const resSchema = await fetch(`https://api.notion.com/v1/data_sources/${databaseId}`, {
         method: "GET",
@@ -416,6 +422,12 @@ export async function getDatabaseSchemeN(accessToken, databaseId){
     }
 }
 
+/**
+ * Uploads a file to Notion for referencing in Databases
+ * @param {string} accessToken 
+ * @param {File} file 
+ * @returns Status object including the id of the file upload
+ */
 export async function uploadFileN(accessToken, file){
     if (!file || !(file instanceof File)) {
         return {
@@ -479,6 +491,13 @@ export async function uploadFileN(accessToken, file){
 
 }
 
+/**
+ * Add a new record to a Notion Database
+ * @param {string} accessToken 
+ * @param {string} databaseId 
+ * @param {Object} properties 
+ * @returns A status object of the action.
+ */
 export async function addRecordN(accessToken, databaseId, properties){
     const resNewRecord = await fetch(`https://api.notion.com/v1/pages`, {
         method: "POST",
@@ -495,8 +514,8 @@ export async function addRecordN(accessToken, databaseId, properties){
             "properties": properties       
         })
     })
-    console.log(`Schema response: ${resSchema.status} ${resSchema.statusText}`)
-    if (resSchema.status !== 200){
+    console.log(`Add record response: ${resNewRecord.status} ${resNewRecord.statusText}`)
+    if (resNewRecord.status !== 200){
         return {
             "status": resNewRecord.status,
             "message": "Failed to create new record"
@@ -509,12 +528,37 @@ export async function addRecordN(accessToken, databaseId, properties){
     }
 }
 
-export async function logActionN(accessToken, recordId, ){
+/**
+ * Update a specified record from a notion database
+ * @param {string} accessToken 
+ * @param {string} recordId 
+ * @param {Object} update 
+ * @returns 
+ */
+export async function updateRecordN(accessToken, recordId, update){
+    const resUpdateRecord = await fetch(`https://api.notion.com/v1/pages/${recordId}`, {
+        method: "PATCH",
+        headers: {
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+            "Notion-Version": "2026-03-11"
+        },
+        body: JSON.stringify({
+            "properties": update
+        })
+    })
+    console.log(`Record update response: ${resUpdateRecord.status} ${resUpdateRecord.statusText}`)
+    if (resUpdateRecord.status !== 200){
+        return {
+            "status": resUpdateRecord.status,
+            "message": "Failed to update record"
+        }
+    }
 
-}
-
-export async function updateRecordN(accessToken, recordId, ){
-
+    return {
+        "status": 200,
+        "message": "Record updated successfully",
+    }
 }
 
 export async function getFilteredRecordsN(accessToken, databaseId, filter, sorts){
@@ -559,16 +603,4 @@ export async function getFilteredRecordsN(accessToken, databaseId, filter, sorts
         "message": "Records found successfully",
         "results": results
     };
-}
-
-export async function getRecordHistory(){
-
-}
-
-export async function highlightRecordN(){
-
-}
-
-export async function getHighlightedRecordsN(){
-
 }
