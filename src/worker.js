@@ -7,7 +7,7 @@
  */
 
 import { findDuplicatesTE } from "./admin.js";
-import { addToHotlistTE, getTrackedDatabasesN, trackNewDatabaseN, getDatabaseIdN, getFilteredRecordsN, getDatabaseSchemaN, uploadFileN } from "./database-actions.js"
+import { addToHotlistTE, getTrackedDatabasesN, trackNewDatabaseN, getDatabaseIdN, getFilteredRecordsN, getDatabaseSchemaN, uploadFileN, addRecordN, updateRecordN } from "./database-actions.js"
 import { getAccessTokenTE, newAccessTokenTE, getAccessTokenN, updateAccessTokenN } from "./authenticate.js";
 import { fractionalSubmission } from "./form.js";
 
@@ -462,7 +462,7 @@ export default {
          * - 500: error when uploading file
          */
         case "/upload-file-notion":
-          console.log("Got request to add a record to notion database")  
+          console.log("Got request to upload a file to notion database")  
           if (request.method !== "POST") {
             return new Response("Method not allowed", { status: 405 });
           }
@@ -512,13 +512,36 @@ export default {
 
           // Get the database schema
           var accessTokenN = await getAccessTokenN(env, userId)
-          var resAddRecord = await getDatabaseSchemaN(accessTokenN, databaseId, input["properties"])
+          var resAddRecord = await addRecordN(accessTokenN, databaseId, input["properties"])
           if (resAddRecord["status"] !== 200){
             return new Response(resAddRecord["message"], { status: 500 })
           }
 
           return new Response("Record Added Successfully", { status: 200 })
 
+        case "/update-record-notion":
+          console.log("Got request to update a record in notion database")  
+          if (request.method !== "POST") {
+            return new Response("Method not allowed", { status: 405 });
+          }
+
+          var input = await request.json();
+          // Check the input has the correct fields
+          if (!input["record"]){
+            return new Response("Record not specified", { status: 400 })
+          }
+          if (!input["properties"]){
+            return new Response("Update properties missing", { status: 400 })
+          }
+
+          // Get the database schema
+          var accessTokenN = await getAccessTokenN(env, userId)
+          var resUpdateRecord = await updateRecordN(accessTokenN, input["record"], input["properties"])
+          if (resUpdateRecord["status"] !== 200){
+            return new Response(resUpdateRecord["message"], { status: 500 })
+          }
+
+          return new Response("Record Updated Successfully", { status: 200 })
 
         default:
           return new Response("Page not found", { status: 404 })
