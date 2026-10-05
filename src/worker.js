@@ -7,7 +7,7 @@
  */
 
 import { findDuplicatesTE } from "./admin.js";
-import { addToHotlistTE, getTrackedDatabasesN, trackNewDatabaseN, getDatabaseIdN, getFilteredRecordsN, getDatabaseSchemaN } from "./database-actions.js"
+import { addToHotlistTE, getTrackedDatabasesN, trackNewDatabaseN, getDatabaseIdN, getFilteredRecordsN, getDatabaseSchemaN, uploadFileN } from "./database-actions.js"
 import { getAccessTokenTE, newAccessTokenTE, getAccessTokenN, updateAccessTokenN } from "./authenticate.js";
 import { fractionalSubmission } from "./form.js";
 
@@ -453,6 +453,72 @@ export default {
           var schema = resSchema["schema"]
 
           return new Response(JSON.stringify(schema), { status: 200 })
+
+        /**
+         * Responses:
+         * - 200: File uploaded successfully
+         * - 400: invalid input
+         * - 405: invalid method
+         * - 500: error when uploading file
+         */
+        case "/upload-file-notion":
+          console.log("Got request to add a record to notion database")  
+          if (request.method !== "POST") {
+            return new Response("Method not allowed", { status: 405 });
+          }
+
+          var input = await request.json();
+          // Check the input has the correct fields
+          if (!input["method"]){
+            return new Response("Upload method missing", { status: 400 })
+          }
+          if (!input["file"]){
+            return new Response("File missing", { status: 400 })
+          }
+          if (!input["filename"]){
+            return new Response("Filename missing", { status: 400 })
+          }
+
+          // Upload file to get file id
+          var accessTokenN = await getAccessTokenN(env, userId)
+          var resUpload = await uploadFileN(accessTokenN, input["file"], input["filename"], input["method"])
+          if (resUpload["status"] !== 200){
+            return new Response(resUpload["message"], { status: 500 })
+          }
+          var uploadId = resUpload["id"]
+
+          return new Response(uploadId, { status: 200 })
+
+        case "/add-record-notion":
+          console.log("Got request to add a record to notion database")  
+          if (request.method !== "POST") {
+            return new Response("Method not allowed", { status: 405 });
+          }
+
+          var input = await request.json();
+          // Check the input has the correct fields
+          if (!input["database"]){
+            return new Response("Database not specified", { status: 400 })
+          }
+          if (!input["properties"]){
+            return new Response("Record properties missing", { status: 400 })
+          }
+
+          // Check the database is being tracked
+          var databaseId = await getDatabaseIdN(env, input["database"])
+          if (!databaseId) {
+            return new Response("Database not found", { status: 404 })
+          }
+
+          // Get the database schema
+          var accessTokenN = await getAccessTokenN(env, userId)
+          var resAddRecord = await getDatabaseSchemaN(accessTokenN, databaseId, input["properties"])
+          if (resAddRecord["status"] !== 200){
+            return new Response(resAddRecord["message"], { status: 500 })
+          }
+
+          return new Response("Record Added Successfully", { status: 200 })
+
 
         default:
           return new Response("Page not found", { status: 404 })

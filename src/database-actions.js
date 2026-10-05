@@ -428,58 +428,96 @@ export async function getDatabaseSchemaN(accessToken, databaseId){
  * @param {File} file 
  * @returns Status object including the id of the file upload
  */
-export async function uploadFileN(accessToken, file){
-    if (!file || !(file instanceof File)) {
-        return {
-            "status": 400,
-            "message": "File missing or malformed."
-        }
-    }
+export async function uploadFileN(accessToken, file, filename, method){
+    const uploadId = null;
 
-    const resCreateUpload = await fetch(`https://api.notion.com/v1/file_uploads`, {
-        method: "POST",
-        headers: {
-            "Authorization": `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-            "Notion-Version": "2026-03-11"
-        },
-        body: JSON.stringify({
-            "mode": "single_part",
-            "filename": file.name,
-            "content_type": file.type
+    // If the file is a raw file use the upload process
+    if (method == "file"){
+        // Check that the file is of type File
+        if (!file || !(file instanceof File)) {
+            return {
+                "status": 400,
+                "message": "File missing or malformed."
+            }
+        }
+        // Start the upload
+        const resCreateUpload = await fetch(`https://api.notion.com/v1/file_uploads`, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${accessToken}`,
+                "Content-Type": "application/json",
+                "Notion-Version": "2026-03-11"
+            },
+            body: JSON.stringify({
+                "mode": "single_part",
+                "filename": filename,
+                "content_type": file.type
+            })
         })
-    })
-    console.log(`Create Upload Response: ${resCreateUpload.status} ${resCreateUpload.statusText}`)
-    if (resCreateUpload.status !== 200){
-        return {
-            "status": resCreateUpload.status,
-            "message": "Failed to create File Upload"
+        console.log(`Create Upload Response: ${resCreateUpload.status} ${resCreateUpload.statusText}`)
+        if (resCreateUpload.status !== 200){
+            return {
+                "status": resCreateUpload.status,
+                "message": "Failed to create File Upload"
+            }
         }
-    }
-    const fileUpload = await resCreateUpload.json()
-    const uploadId = fileUpload["id"]
-    if (!uploadId){
-        return {
-            "status": 500,
-            "message": "Couldn't get file upload ID"
+        const fileUpload = await resCreateUpload.json()
+        uploadId = fileUpload["id"]
+        if (!uploadId){
+            return {
+                "status": 500,
+                "message": "Couldn't get file upload ID"
+            }
         }
-    }
 
-    const uploadForm = new FormData();
-    uploadForm.append('file', file, file.name)
-    const resUploadFile = await fetch(`https://api.notion.com/v1/file_uploads/${uploadId}/send`, {
-        method: "POST",
-        headers: {
-            "Authorization": `Bearer ${accessToken}`,
-            "Notion-Version": "2026-03-11"
-        },
-        body: uploadForm
-    })
-    console.log(`Create Upload Response: ${resUploadFile.status} ${resUploadFile.statusText}`)
-    if (resUploadFile.status !== 200){
-        return {
-            "status": resUploadFile.status,
-            "message": "Failed to upload file"
+        // Upload the file data
+        const uploadForm = new FormData();
+        uploadForm.append('file', file, file.name)
+        const resUploadFile = await fetch(`https://api.notion.com/v1/file_uploads/${uploadId}/send`, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${accessToken}`,
+                "Notion-Version": "2026-03-11"
+            },
+            body: uploadForm
+        })
+        console.log(`Create Upload Response: ${resUploadFile.status} ${resUploadFile.statusText}`)
+        if (resUploadFile.status !== 200){
+            return {
+                "status": resUploadFile.status,
+                "message": "Failed to upload file"
+            }
+        }
+    } else if (method == "link") {
+        // Share the file link with Notion
+        const resCreateUpload = await fetch(`https://api.notion.com/v1/file_uploads`, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${accessToken}`,
+                "Content-Type": "application/json",
+                "Notion-Version": "2026-03-11"
+            },
+            body: JSON.stringify({
+                "mode": "external_url",
+                "filename": filename,
+                "content_type": "application/octet-stream",
+                "external_url": file
+            })
+        })
+        console.log(`Create Upload Response: ${resCreateUpload.status} ${resCreateUpload.statusText}`)
+        if (resCreateUpload.status !== 200){
+            return {
+                "status": resCreateUpload.status,
+                "message": "Failed to create File Upload"
+            }
+        }
+        const fileUpload = await resCreateUpload.json()
+        uploadId = fileUpload["id"]
+        if (!uploadId){
+            return {
+                "status": 500,
+                "message": "Couldn't get file upload ID"
+            }
         }
     }
 
@@ -489,7 +527,7 @@ export async function uploadFileN(accessToken, file){
         "id": uploadId
     }
 
-}
+} 
 
 /**
  * Add a new record to a Notion Database
