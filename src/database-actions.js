@@ -390,7 +390,7 @@ export async function getDatabaseIdN(env, key){
  * @param {string} databaseId 
  * @returns Status object containing database schema
  */
-export async function getDatabaseSchemeN(accessToken, databaseId){
+export async function getDatabaseSchemaN(accessToken, databaseId){
     const resSchema = await fetch(`https://api.notion.com/v1/data_sources/${databaseId}`, {
         method: "GET",
         headers: {
@@ -533,7 +533,7 @@ export async function addRecordN(accessToken, databaseId, properties){
  * @param {string} accessToken 
  * @param {string} recordId 
  * @param {Object} update 
- * @returns 
+ * @returns A status object of the action.
  */
 export async function updateRecordN(accessToken, recordId, update){
     const resUpdateRecord = await fetch(`https://api.notion.com/v1/pages/${recordId}`, {
@@ -561,6 +561,14 @@ export async function updateRecordN(accessToken, recordId, update){
     }
 }
 
+/**
+ * Queries a notion database according to a specific filter and sorted in a specific order
+ * @param {string} accessToken 
+ * @param {string} databaseId 
+ * @param {Object} filter 
+ * @param {Object} sorts 
+ * @returns A status object containing the result of the query
+ */
 export async function getFilteredRecordsN(accessToken, databaseId, filter, sorts){
     var results = []
     var cursor = null;

@@ -7,7 +7,7 @@
  */
 
 import { findDuplicatesTE } from "./admin.js";
-import { addToHotlistTE, getTrackedDatabasesN, trackNewDatabaseN, getDatabaseIdN, getFilteredRecordsN } from "./database-actions.js"
+import { addToHotlistTE, getTrackedDatabasesN, trackNewDatabaseN, getDatabaseIdN, getFilteredRecordsN, getDatabaseSchemaN } from "./database-actions.js"
 import { getAccessTokenTE, newAccessTokenTE, getAccessTokenN, updateAccessTokenN } from "./authenticate.js";
 import { fractionalSubmission } from "./form.js";
 
@@ -343,7 +343,7 @@ export default {
          * Responses:
          * - 200: database now being tracked
          * - 400: invalid input
-         * - 403: invalid method
+         * - 405: invalid method
          * - 500: error while attempting to track database
          */
         case "/track-new-database":
@@ -373,37 +373,86 @@ export default {
 
           return new Response("Database tracked", { status: 200 })
         
-        
-        case "/get-urgent-actions":
+        /**
+         * Responses:
+         * - 200: query results returned
+         * - 400: invalid input
+         * - 404: database not found
+         * - 405: invalid method
+         * - 500: error while
+         */
+        case "/query-notion":
           console.log("Got request to query a database")  
-          // if (request.method !== "POST") {
-          //   return new Response("Method not allowed", { status: 405 });
-          // }
-
-          //var input = await request.json();
-
-          var databaseId = await getDatabaseIdN(env, "fractionalTest")//input["database"])
-          var filter = {
-            "property": "Stage",
-            "multi_select": {
-              "contains": "Follow up needed"
-            }
+          if (request.method !== "POST") {
+            return new Response("Method not allowed", { status: 405 });
           }
-          var sorts = [{
-            "property": "Email",
-            "direction": "ascending",
-          }]
 
+          var input = await request.json();
+
+          // Check the input has the correct fields
+          if (!input["database"]){
+            return new Response("Database not specified", { status: 400 })
+          }
+          if (!input["filter"]){
+            return new Response("Filter not specified", { status: 400 })
+          }
+          if (!input["database"]){
+            return new Response("Sort order not specified", { status: 400 })
+          }
+
+          // Check the database is being tracked
+          var databaseId = await getDatabaseIdN(env, input["database"])
+          if (!databaseId) {
+            return new Response("Database not found", { status: 404 })
+          }
+          var filter = input["filter"]
+          var sorts = [input["sort"]]
+
+          // Query the database
           var accessTokenN = await getAccessTokenN(env, userId)
-          console.log(accessTokenN)
           var data = await getFilteredRecordsN(accessTokenN, databaseId, filter, sorts)
-          var results = data["results"]
-          var actions = []
-
-          for (var result of results){
-            actions.push(result["properties"]["Name (x if no intake form)"]["title"][0]["plain_text"])
+          if (data["status"] !== 200){
+            return new Response(data["message"], { status: 500 })
           }
-          return new Response(JSON.stringify(actions), { status: 200 })
+          var results = data["results"]
+
+          return new Response(JSON.stringify(results), { status: 200 })
+
+        /**
+         * Responses:
+         * - 200: schema returned
+         * - 400: invalid input
+         * - 404: database not being tracked
+         * - 405: invalid method
+         * - 500: error getting database schema
+         */
+        case "/get-schema":
+          console.log("Got request for the schema of a database")  
+          if (request.method !== "POST") {
+            return new Response("Method not allowed", { status: 405 });
+          }
+
+          var input = await request.json();
+          // Check the input has the correct fields
+          if (!input["database"]){
+            return new Response("Database not specified", { status: 400 })
+          }
+
+          // Check the database is being tracked
+          var databaseId = await getDatabaseIdN(env, input["database"])
+          if (!databaseId) {
+            return new Response("Database not found", { status: 404 })
+          }
+
+          // Get the database schema
+          var accessTokenN = await getAccessTokenN(env, userId)
+          var resSchema = await getDatabaseSchemaN(accessTokenN, databaseId)
+          if (resSchema["status"] !== 200){
+            return new Response(resSchema["message"], { status: 500 })
+          }
+          var schema = resSchema["schema"]
+
+          return new Response(JSON.stringify(schema), { status: 200 })
 
         default:
           return new Response("Page not found", { status: 404 })
