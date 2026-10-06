@@ -8,7 +8,7 @@
  */
 
 import { addToHotlistTE, parseFromResumeTE, findRecordTE, updateRecordTE, addAttachmentTE } from "./database-actions.js";
-import { uid, retryTimer, getDateString } from "./utilities.js";
+import { uid, getDateString } from "./utilities.js";
 
 /**
  * Checks if the contents of the form fits requirements.

@@ -184,7 +184,7 @@ describe("addToHotlistTE", () => {
 describe("getHotlistRecordsTE", () => {
   it("returns the records of a hotlist", async () => {
     mockHotlistExists("hl-1");
-    http.on("GET", `${TE}/hl-1/all_records`, [ok({ entries: [{ id: 1 }, { id: 2 }] })]);
+    http.on("GET", `${TE}/hotlists/hl-1/all_records`, [ok({ entries: [{ id: 1 }, { id: 2 }] })]);
 
     const result = await getHotlistRecordsTE(TOKEN, "Leads");
 
@@ -197,7 +197,7 @@ describe("getHotlistRecordsTE", () => {
 
   it("returns 404 when the hotlist has no records", async () => {
     mockHotlistExists("hl-1");
-    http.on("GET", `${TE}/hl-1/all_records`, [ok({ entries: [] })]);
+    http.on("GET", `${TE}/hotlists/hl-1/all_records`, [ok({ entries: [] })]);
 
     const result = await getHotlistRecordsTE(TOKEN, "Leads");
 
@@ -206,7 +206,7 @@ describe("getHotlistRecordsTE", () => {
 
   it("passes through the status when records can't be fetched", async () => {
     mockHotlistExists("hl-1");
-    http.on("GET", `${TE}/hl-1/all_records`, [reply(403)]);
+    http.on("GET", `${TE}/hotlists/hl-1/all_records`, [reply(403)]);
 
     const result = await getHotlistRecordsTE(TOKEN, "Leads");
 
@@ -223,11 +223,11 @@ describe("getHotlistRecordsTE", () => {
 
   it("sends the bearer token", async () => {
     mockHotlistExists("hl-1");
-    http.on("GET", `${TE}/hl-1/all_records`, [ok({ entries: [{ id: 1 }] })]);
+    http.on("GET", `${TE}/hotlists/hl-1/all_records`, [ok({ entries: [{ id: 1 }] })]);
 
     await getHotlistRecordsTE(TOKEN, "Leads");
 
-    const [call] = http.callsTo("GET", "/public/v1/hl-1/all_records");
+    const [call] = http.callsTo("GET", "/public/v1/hotlists/hl-1/all_records");
     expect(call.headers.get("authorization")).toBe(`Bearer ${TOKEN}`);
   });
 });

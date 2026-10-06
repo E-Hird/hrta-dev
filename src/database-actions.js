@@ -163,7 +163,7 @@ export async function getHotlistRecordsTE(accessToken, hotlist, type="person"){
     }
 
     // Get the records for the hotlist
-    const resGetHotlistRecords = await fetch(`https://bb3api.topechelon.com/public/v1/${hotlistID}/all_records`, {
+    const resGetHotlistRecords = await fetch(`https://bb3api.topechelon.com/public/v1/hotlists/${hotlistID}/all_records`, {
         method: "GET",
         headers: {
             "Authorization": `Bearer ${accessToken}`
@@ -177,7 +177,7 @@ export async function getHotlistRecordsTE(accessToken, hotlist, type="person"){
         }
     }
     // Error if there aren't any records in the hotlist
-    const results = await resGetHotlistRecords.json()["entries"]
+    const results = (await resGetHotlistRecords.json())["entries"]
     if (results.length <= 0){
         return {
             "status": 404,
@@ -364,6 +364,9 @@ export async function trackNewDatabaseN(accessToken, env, key, id){
         return false
     }
     const data = await resDatabase.json();
+    if (!data["data_sources"].length > 0){
+        return false
+    }
     const datasourceId = data["data_sources"][0]["id"]
     await env.DATABASE_IDS.put(key, datasourceId);
     return true
@@ -429,7 +432,7 @@ export async function getDatabaseSchemaN(accessToken, databaseId){
  * @returns Status object including the id of the file upload
  */
 export async function uploadFileN(accessToken, file, filename, method){
-    const uploadId = null;
+    var uploadId = null;
 
     // If the file is a raw file use the upload process
     if (method == "file"){

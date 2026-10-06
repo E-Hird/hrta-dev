@@ -9,7 +9,7 @@
 import { findDuplicatesTE } from "./admin.js";
 import { addToHotlistTE, getTrackedDatabasesN, trackNewDatabaseN, getDatabaseIdN, getFilteredRecordsN, getDatabaseSchemaN, uploadFileN, addRecordN, updateRecordN } from "./database-actions.js"
 import { getAccessTokenTE, newAccessTokenTE, getAccessTokenN, updateAccessTokenN } from "./authenticate.js";
-import { fractionalSubmission } from "./form.js";
+import { fractionalSubmission, advisorySubmission } from "./form.js";
 
 export default {
 	async fetch(request, env, ctx) {
@@ -283,7 +283,6 @@ export default {
               "Access-Control-Allow-Headers": "Content-Type, Authorization",
             },
           })
-          break;
 
         /**
          * Responses:
@@ -365,7 +364,7 @@ export default {
           matchId = matchId.split["/"].at(-1)
 
           var accessTokenN = await getAccessTokenN(env, userId)
-          const newTrack = trackNewDatabaseN(accessTokenN, env, input["name"], matchId)
+          var newTrack = trackNewDatabaseN(accessTokenN, env, input["name"], matchId)
 
           if (!newTrack) {
             return new Response("Error tracking database", { status: 500 })
