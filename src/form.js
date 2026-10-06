@@ -179,7 +179,7 @@ export async function fractionalSubmission(accessToken, formData){
 
     const resPersonSearch = await findRecordTE(accessToken, searchFilter)
     if (resPersonSearch["status"] !== 200){
-        statusObject["status"] = resParseResume["status"];
+        statusObject["status"] = resPersonSearch["status"];
         statusObject["message"] = "Search error"
         return statusObject
     }
@@ -294,7 +294,7 @@ export async function advisorySubmission(accessToken, formData){
 
     const resPersonSearch = await findRecordTE(accessToken, searchFilter)
     if (resPersonSearch["status"] !== 200){
-        statusObject["status"] = resParseResume["status"];
+        statusObject["status"] = resPersonSearch["status"];
         statusObject["message"] = "Search error"
         return statusObject
     }
