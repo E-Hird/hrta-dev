@@ -7,7 +7,7 @@
  */
 
 import { findDuplicatesTE } from "./admin.js";
-import { addToHotlistTE, getTrackedDatabasesN, trackNewDatabaseN, getDatabaseIdN, getFilteredRecordsN, getDatabaseSchemaN, uploadFileN, addRecordN, updateRecordN } from "./database-actions.js"
+import { addToHotlistTE, getTrackedDatabasesN, trackNewDatabaseN, getDatabaseIdN, getFilteredRecordsN, getDatabaseSchemaN, uploadFileN, addRecordN, updateRecordN, getHotlistRecordsTE } from "./database-actions.js"
 import { getAccessTokenTE, newAccessTokenTE, getAccessTokenN, updateAccessTokenN } from "./authenticate.js";
 import { fractionalSubmission, advisorySubmission } from "./form.js";
 
@@ -72,6 +72,37 @@ export default {
           updateAccessTokenN(env, userId, newToken)
           return new Response("PAT updates successfully.", { status: 200 })
 
+        /**
+         * Responses:
+         * - 200: job list returned successfully
+         * - 403: invalid origin (not website)
+         * - 405: invalid method
+         * - 500: error trying to get the job list
+         */
+        case "/get-jobs":
+          console.log("Got job board request")
+          if (request.method !== "GET") {
+            return new Response("Method not allowed", { status: 405 });
+          }
+
+          if (origin !== "https://www.hrtalentalliance.com") {
+            return new Response("Forbidden", { status : 403 });
+          }
+
+          var accessTokenTE = await getAccessTokenTE(env, userId);
+          var resJobList = await getHotlistRecordsTE(accessTokenTE, "Job Board", "job")
+          if (resJobList["status"] !== 200){
+            return new Response(resJobList["message"], { status: 500 })
+          }
+          var jobList = resJobList["results"]
+          if (!jobList){
+            return new Response("Job list not found", { status: 500 })
+          }
+
+          return new Response(JSON.stringify(jobList), { status: 200 })
+
+        
+        
         /**
          * Responses:
          * - 200: submission accepted and forwarded
