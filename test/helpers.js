@@ -1,4 +1,4 @@
-import { vi } from "vitest";
+import { vi, expect } from "vitest";
 
 /**
  * Tiny fetch mock: register expected requests, each with a queue of responses.
@@ -139,4 +139,53 @@ export function makePersonRecord(overrides = {}) {
     email_addresses: [{ email: "someone-else@example.com" }],
     ...overrides,
   };
+}
+
+// =============================================================================
+// Worker endpoint helpers (used by the worker.*.integration tests)
+// =============================================================================
+
+export const SITE_ORIGIN = "https://www.hrtalentalliance.com";
+
+/** A fake `env` for the Worker: USER_ID plus an in-memory DATABASE_IDS KV namespace */
+export function makeWorkerEnv({ userId = "user-1", store = {} } = {}) {
+  return {
+    USER_ID: userId,
+    store, // exposed so tests can inspect what was written to KV
+    DATABASE_IDS: {
+      list: vi.fn(async () => ({ keys: Object.keys(store).map((name) => ({ name })) })),
+      get: vi.fn(async (key) => store[key] ?? null),
+      put: vi.fn(async (key, value) => {
+        store[key] = value;
+      }),
+    },
+  };
+}
+
+/**
+ * Builds a Request for the Worker.
+ * @param {string} path
+ * @param {Object} [opts]
+ * @param {string} [opts.method="GET"]
+ * @param {string} [opts.origin]  value of the Origin header
+ * @param {*}      [opts.json]    object -> JSON body; a string is sent as-is (use for malformed JSON)
+ * @param {*}      [opts.body]    raw body (FormData, string...)
+ * @param {Object} [opts.headers]
+ */
+export function makeRequest(path, { method = "GET", origin, json, body, headers = {} } = {}) {
+  const h = new Headers(headers);
+  if (origin) h.set("Origin", origin);
+  let payload = body;
+  if (json !== undefined) {
+    payload = typeof json === "string" ? json : JSON.stringify(json);
+    h.set("Content-Type", "application/json");
+  }
+  return new Request(`https://worker.example.com${path}`, { method, headers: h, body: payload });
+}
+
+/** Asserts the standard CORS headers for the website origin are present */
+export function expectCors(response) {
+  expect(response.headers.get("access-control-allow-origin")).toBe(SITE_ORIGIN);
+  expect(response.headers.get("access-control-allow-methods")).toBe("GET, POST, PUT, DELETE, OPTIONS");
+  expect(response.headers.get("access-control-allow-headers")).toBe("Content-Type, Authorization");
 }
