@@ -5,6 +5,9 @@ import { vi } from "vitest";
  * - Unmatched requests throw (so a forgotten mock fails loudly).
  * - Every recorded call is available in `calls` for asserting headers/bodies.
  * - `assertAllConsumed()` fails if a registered response was never used.
+ *
+ * Written by hand because `fetchMock` was removed from newer versions of
+ * @cloudflare/vitest-pool-workers.
  */
 export function createFetchMock() {
   const routes = [];
@@ -65,3 +68,75 @@ export function createFetchMock() {
 
 export const ok = (body = {}, headers) => ({ status: 200, body, headers });
 export const reply = (status, body = {}, headers) => ({ status, body, headers });
+
+// =============================================================================
+// Form submission helpers (used by the form.js tests)
+// =============================================================================
+
+export const BASE_FORM_FIELDS = [
+  "fname", "lname", "email", "linkedIn", "resume", "city", "state", "country",
+];
+
+export const FRACTIONAL_FORM_FIELDS = [
+  "jobTitle", "industry", "company", "boss", "responsibilities", "teamsAndFunctions",
+  "challengesSolved", "fixBuildImprove", "outcomes", "problemSolving", "keySystems",
+  "workInterest", "companyInterest", "workTypePreference",
+];
+
+export function makeResumeFile(name = "resume.pdf") {
+  return new File(["resume contents"], name, { type: "application/pdf" });
+}
+
+/**
+ * Builds a valid website form submission.
+ * @param {Object}   [opts]
+ * @param {"advisory"|"fractional"} [opts.type="advisory"] fractional adds the extra questions
+ * @param {Object}   [opts.overrides] field values to replace (or add)
+ * @param {string[]} [opts.omit]      field names to leave out entirely
+ */
+export function buildFormData({ type = "advisory", overrides = {}, omit = [] } = {}) {
+  const values = {
+    fname: "Jane",
+    lname: "Doe",
+    email: "jane@example.com",
+    linkedIn: "https://www.linkedin.com/in/janedoe",
+    resume: makeResumeFile(),
+    city: "Austin",
+    state: "TX",
+    country: "USA",
+  };
+  if (type === "fractional") {
+    Object.assign(values, {
+      jobTitle: "VP Engineering",
+      industry: "SaaS",
+      company: "Acme Corp",
+      boss: "The CEO",
+      responsibilities: "Led the engineering org",
+      teamsAndFunctions: "Platform and Data",
+      challengesSolved: "Scaling the platform",
+      fixBuildImprove: "Rebuilt the CI pipeline",
+      outcomes: "Cut cloud costs by 20%",
+      problemSolving: "Distributed systems",
+      keySystems: "AWS, Kubernetes",
+      workInterest: "Fractional CTO roles",
+      companyInterest: "Early-stage startups",
+      workTypePreference: "Remote",
+    });
+  }
+  Object.assign(values, overrides);
+
+  const formData = new FormData();
+  for (const [key, value] of Object.entries(values)) {
+    if (!omit.includes(key)) formData.append(key, value);
+  }
+  return formData;
+}
+
+/** A Top Echelon person record as returned by findRecordTE's `result` */
+export function makePersonRecord(overrides = {}) {
+  return {
+    id: 99,
+    email_addresses: [{ email: "someone-else@example.com" }],
+    ...overrides,
+  };
+}

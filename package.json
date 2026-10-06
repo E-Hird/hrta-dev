@@ -5,8 +5,9 @@
   "description": "A collection of tools for HR Talent Alliance",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "npx eslint src/*.js --fix"
+    "test": "npx vitest run",
+    "lint": "npx eslint src/*.js --fix",
+    "dev": "npx wrangler dev"
   },
   "repository": {
     "type": "git",
@@ -26,6 +27,7 @@
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "0.22.0",
     "@eslint/js": "^10.0.1",
+    "eslint": "^10.12.0",
     "globals": "^17.8.0",
     "vitest": "^4.1.0",
     "wrangler": "^4.113.0"
