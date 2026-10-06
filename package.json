@@ -24,8 +24,10 @@
   },
   "homepage": "https://github.com/E-Hird/hrta-dev#readme",
   "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "0.22.0",
     "@eslint/js": "^10.0.1",
     "globals": "^17.8.0",
+    "vitest": "^4.1.0",
     "wrangler": "^4.113.0"
   }
 }
