@@ -69,7 +69,7 @@ export default {
             return new Response("Invalid token detected", { status: 400 })
           }
 
-          updateAccessTokenN(env, userId, newToken)
+          await updateAccessTokenN(env, userId, newToken)
           return new Response("PAT updates successfully.", { status: 200 })
 
         /**
@@ -144,6 +144,7 @@ export default {
             var createPerson = await fractionalSubmission(accessTokenTE, formData);
             // Handle results of form submission
             var submissionID = createPerson["id"]
+            retries += 1
             switch (createPerson["status"]){
               case 200: // Success
                 console.log(`Submission successful: ${submissionID}`)
@@ -194,7 +195,7 @@ export default {
         
 
         case "/advisory":
-          console.log("Got fractional request.")
+          console.log("Got advisory request.")
           if (request.method !== "POST") {
             return new Response("Method not allowed", { status: 405 });
           }
@@ -226,6 +227,7 @@ export default {
             var createPerson = await advisorySubmission(accessTokenTE, formData);
             // Handle results of form submission
             var submissionID = createPerson["id"]
+            retries += 1
             switch (createPerson["status"]){
               case 200: // Success
                 console.log(`Submission successful: ${submissionID}`)
@@ -392,10 +394,10 @@ export default {
           // Get the path of the share link
           var matchId = input["link"].split("?")[0]
           // Get the ID from the path
-          matchId = matchId.split["/"].at(-1)
+          matchId = matchId.split("/").at(-1)
 
           var accessTokenN = await getAccessTokenN(env, userId)
-          var newTrack = trackNewDatabaseN(accessTokenN, env, input["name"], matchId)
+          var newTrack = await trackNewDatabaseN(accessTokenN, env, input["name"], matchId)
 
           if (!newTrack) {
             return new Response("Error tracking database", { status: 500 })
@@ -426,7 +428,7 @@ export default {
           if (!input["filter"]){
             return new Response("Filter not specified", { status: 400 })
           }
-          if (!input["database"]){
+          if (!input["sort"]){
             return new Response("Sort order not specified", { status: 400 })
           }
 
