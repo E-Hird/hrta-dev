@@ -489,6 +489,14 @@ export default {
 
           return new Response(uploadId, { status: 200 })
 
+        /**
+         * Responses:
+         * - 200: record added successfully
+         * - 400: invalid input
+         * - 404: database not found
+         * - 405: invalid  method
+         * - 500: error when adding record to database
+         */
         case "/add-record-notion":
           console.log("Got request to add a record to notion database")  
           if (request.method !== "POST") {
@@ -519,6 +527,13 @@ export default {
 
           return new Response("Record Added Successfully", { status: 200 })
 
+        /**
+         * Responses:
+         * - 200: record updated successfully
+         * - 400: invalid input
+         * - 405: invalid  method
+         * - 500: error when updating record
+         */
         case "/update-record-notion":
           console.log("Got request to update a record in notion database")  
           if (request.method !== "POST") {
