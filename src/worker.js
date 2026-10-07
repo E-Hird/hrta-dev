@@ -390,7 +390,14 @@ export default {
           var databaseList = await getTrackedDatabasesN(env)
           var names = databaseList.map(obj => obj["name"])
 
-          return new Response(JSON.stringify(names), { status: 200 })
+          return new Response(JSON.stringify(names), { 
+            status: 200,
+            headers: {
+              "Access-Control-Allow-Origin": "https://www.hrtalentalliance.com",
+              "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+              "Access-Control-Allow-Headers": "Content-Type, Authorization",
+            }
+          })
 
         /**
          * Responses:
