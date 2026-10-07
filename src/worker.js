@@ -113,7 +113,14 @@ export default {
             return new Response("Job list not found", { status: 500 })
           }
 
-          return new Response(JSON.stringify(jobList), { status: 200 })
+          return new Response(JSON.stringify(jobList), { 
+            status: 200,
+            headers: {
+              "Access-Control-Allow-Origin": "https://www.hrtalentalliance.com",
+              "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+              "Access-Control-Allow-Headers": "Content-Type, Authorization",
+            },
+          })
 
         
         
@@ -428,10 +435,24 @@ export default {
           var newTrack = await trackNewDatabaseN(accessTokenN, env, input["name"], matchId)
 
           if (!newTrack) {
-            return new Response("Error tracking database", { status: 500 })
+            return new Response("Error tracking database", { 
+              status: 500,
+              headers: {
+                "Access-Control-Allow-Origin": "https://www.hrtalentalliance.com",
+                "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization",
+              }, 
+            })
           }
 
-          return new Response("Database tracked", { status: 200 })
+          return new Response("Database tracked", { 
+            status: 200,
+            headers: {
+              "Access-Control-Allow-Origin": "https://www.hrtalentalliance.com",
+              "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+              "Access-Control-Allow-Headers": "Content-Type, Authorization",
+            },
+          })
         
         /**
          * Responses:
