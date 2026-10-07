@@ -70,7 +70,14 @@ export default {
           }
 
           await updateAccessTokenN(env, userId, newToken)
-          return new Response("PAT updates successfully.", { status: 200 })
+          return new Response("PAT updates successfully.", { 
+            status: 200,
+            headers: {
+              "Access-Control-Allow-Origin": "https://www.hrtalentalliance.com",
+              "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+              "Access-Control-Allow-Headers": "Content-Type, Authorization",
+            },
+          })
 
         /**
          * Responses:
@@ -92,7 +99,14 @@ export default {
           var accessTokenTE = await getAccessTokenTE(env, userId);
           var resJobList = await getHotlistRecordsTE(accessTokenTE, "Job Board", "job")
           if (resJobList["status"] !== 200){
-            return new Response(resJobList["message"], { status: 500 })
+            return new Response(resJobList["message"], { 
+              status: 500, 
+              headers: {
+                  "Access-Control-Allow-Origin": "https://www.hrtalentalliance.com",
+                  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+                  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+                },
+            })
           }
           var jobList = resJobList["results"]
           if (!jobList){
@@ -193,7 +207,14 @@ export default {
           }
           break; 
         
-
+        /**
+         * Responses:
+         * - 200: submission accepted and forwarded
+         * - 400: error submission was malformed
+         * - 403: incorrect origin used (not from website)
+         * - 405: incorrect method used
+         * - 500: repeated error(s) submitting form
+         */
         case "/advisory":
           console.log("Got advisory request.")
           if (request.method !== "POST") {
