@@ -210,7 +210,7 @@ export async function getJobTE(accessToken, jobId){
     return {
         "status": 200,
         "message": "Job found",
-        "job": jobInfo
+        "job": jobInfo["job"]
     }
 }
 

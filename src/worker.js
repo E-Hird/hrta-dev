@@ -115,7 +115,7 @@ export default {
 
           var fullJobs = []
           for (let job of jobList){
-            fullJobs.push(await getJobTE(accessTokenTE, job["id"]))
+            fullJobs.push((await getJobTE(accessTokenTE, job["id"]))["job"])
           }
 
           return new Response(JSON.stringify(fullJobs), { 
