@@ -7,7 +7,7 @@
  */
 
 import { findDuplicatesTE } from "./admin.js";
-import { addToHotlistTE, getTrackedDatabasesN, trackNewDatabaseN, getDatabaseIdN, getFilteredRecordsN, getDatabaseSchemaN, uploadFileN, addRecordN, updateRecordN, getHotlistRecordsTE } from "./database-actions.js"
+import { addToHotlistTE, getTrackedDatabasesN, trackNewDatabaseN, getDatabaseIdN, getFilteredRecordsN, getDatabaseSchemaN, uploadFileN, addRecordN, updateRecordN, getHotlistRecordsTE, getJobTE } from "./database-actions.js"
 import { getAccessTokenTE, newAccessTokenTE, getAccessTokenN, updateAccessTokenN } from "./authenticate.js";
 import { fractionalSubmission, advisorySubmission } from "./form.js";
 
@@ -111,6 +111,11 @@ export default {
           var jobList = resJobList["results"]
           if (!jobList){
             return new Response("Job list not found", { status: 500 })
+          }
+
+          var fullJobs = []
+          for (let job of jobList){
+            fullJobs.append(await getJobTE(accessTokenTE, job["id"]))
           }
 
           return new Response(JSON.stringify(jobList), { 

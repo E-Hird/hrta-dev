@@ -192,6 +192,28 @@ export async function getHotlistRecordsTE(accessToken, hotlist, type="person"){
     }
 }
 
+export async function getJobTE(accessToken, jobId){
+    const resJob = await fetch(`https://bb3api.topechelon.com/public/v1/jobs/${jobId}`, {
+        method: "GET",
+        headers: {
+            "Authorization": `Bearer ${accessToken}`,
+        }
+    })
+    if (resJob.status !== 200){
+        return {
+            "status": resJob.status,
+            "message": "Error getting job info"
+        }
+    }
+
+    const jobInfo = await resJob.json()
+    return {
+        "status": 200,
+        "message": "Job found",
+        "job": jobInfo
+    }
+}
+
 // # Person Records
 
 /**
