@@ -118,7 +118,7 @@ export default {
             fullJobs.push(await getJobTE(accessTokenTE, job["id"]))
           }
 
-          return new Response(JSON.stringify(jobList), { 
+          return new Response(JSON.stringify(fullJobs), { 
             status: 200,
             headers: {
               "Access-Control-Allow-Origin": "https://www.hrtalentalliance.com",
