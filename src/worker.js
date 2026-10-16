@@ -492,7 +492,7 @@ export default {
             return new Response("Database not found", { status: 404 })
           }
           var filter = input["filter"]
-          var sorts = [input["sort"]]
+          var sorts = input["sort"]
 
           // Query the database
           var accessTokenN = await getAccessTokenN(env, userId)
