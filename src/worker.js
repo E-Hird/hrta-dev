@@ -7,9 +7,55 @@
  */
 
 import { findDuplicatesTE } from "./admin.js";
-import { addToHotlistTE, getTrackedDatabasesN, trackNewDatabaseN, getDatabaseIdN, getFilteredRecordsN, getDatabaseSchemaN, uploadFileN, addRecordN, updateRecordN, getHotlistRecordsTE, getJobTE } from "./database-actions.js"
+import { addToHotlistTE, getTrackedDatabasesN, trackNewDatabaseN, getDatabaseIdN, getFilteredRecordsN, getDatabaseSchemaN, uploadFileN, addRecordN, updateRecordN, getHotlistRecordsTE, getJobTE, addRecordTE, getFilteredRecordsTE, updateRecordTE } from "./database-actions.js"
 import { getAccessTokenTE, newAccessTokenTE, getAccessTokenN, updateAccessTokenN } from "./authenticate.js";
 import { fractionalSubmission, advisorySubmission } from "./form.js";
+
+// ================================================ Helpers for the Top Echelon record endpoints ================================================
+
+/**
+ * Hotlist names are sent to Top Echelon in a query string without encoding (see `getHotlistIdTE`),
+ * so these characters would make the search find the wrong hotlist.
+ */
+const UNSAFE_HOTLIST_CHARS = /[&#%+?]/;
+
+/** Record ids end up in a URL path, so only allow plain id characters */
+const RECORD_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
+
+/**
+ * Checks a value is a plain object (not null, not an array)
+ * @param {*} value 
+ * @returns {Boolean}
+ */
+function isPlainObject(value){
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+}
+
+/**
+ * Reads a request body as a JSON object.
+ * @param {Request} request 
+ * @returns {Object|null} the parsed object, or `null` if the body isn't a JSON object
+ */
+async function readJsonObject(request){
+  try {
+    const body = await request.json()
+    return isPlainObject(body) ? body : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Validates the optional `hotlist` field of a request. `undefined`, `null` and `""` all mean "no hotlist".
+ * @param {*} hotlist 
+ * @returns {string|null} an error message, or `null` if the field is absent or valid
+ */
+function checkHotlistField(hotlist){
+  if (hotlist === undefined || hotlist === null || hotlist === "") return null
+  if (typeof hotlist !== "string" || !hotlist.trim()) return "Hotlist must be a non-empty string"
+  if (UNSAFE_HOTLIST_CHARS.test(hotlist)) return "Hotlist name can't contain & # % + or ?"
+  return null
+}
 
 export default {
 	async fetch(request, env, ctx) {
@@ -643,6 +689,181 @@ export default {
           }
 
           return new Response("Record Updated Successfully", { status: 200 })
+
+        // ================================================== Top Echelon records ==================================================
+
+        /**
+         * Queries Top Echelon person records (mirrors /query-notion).
+         * Input: { "filter": <person_search object>, "sort_by": optional, "sort_order": optional "asc" | "desc" }
+         * Responses:
+         * - 200: JSON array of the matching person records (empty if none match).
+         *        Header `X-Results-Truncated: true` is added if the page limit cut the results short.
+         * - 400: invalid input
+         * - 405: invalid method
+         * - 500: error while querying Top Echelon
+         */
+        case "/query-te":
+          console.log("Got request to query Top Echelon")
+          if (request.method !== "POST") {
+            return new Response("Method not allowed", { status: 405 });
+          }
+
+          var input = await readJsonObject(request);
+          if (!input) {
+            return new Response("Body must be a JSON object", { status: 400 })
+          }
+
+          // Check the input has the correct fields
+          if (!input["filter"]){
+            return new Response("Filter not specified", { status: 400 })
+          }
+          if (!isPlainObject(input["filter"])){
+            return new Response("Filter must be an object", { status: 400 })
+          }
+          var sortBy = input["sort_by"]
+          var sortOrder = input["sort_order"]
+          if (sortBy !== undefined && (typeof sortBy !== "string" || !sortBy)){
+            return new Response("sort_by must be a non-empty string", { status: 400 })
+          }
+          if (sortOrder !== undefined && !["asc", "desc"].includes(sortOrder)){
+            return new Response("sort_order must be 'asc' or 'desc'", { status: 400 })
+          }
+
+          // Query Top Echelon (an undefined sort falls back to the default of newest first)
+          var accessTokenTE = await getAccessTokenTE(env, userId)
+          var resQueryTE = await getFilteredRecordsTE(accessTokenTE, input["filter"], sortBy, sortOrder)
+          if (resQueryTE["status"] !== 200){
+            return new Response(resQueryTE["message"], { status: 500 })
+          }
+
+          return new Response(JSON.stringify(resQueryTE["results"]), {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json",
+              ...(resQueryTE["truncated"] ? { "X-Results-Truncated": "true" } : {}),
+            },
+          })
+
+        /**
+         * Adds a person record to Top Echelon (mirrors /add-record-notion), optionally into a hotlist.
+         * Input: { "properties": <person object>, "hotlist": optional hotlist name }
+         * Responses:
+         * - 200: record added. JSON { message, id } (plus `hotlist` if it was added to one)
+         * - 400: invalid input
+         * - 405: invalid method
+         * - 500: error when adding the record, or the record was added but the hotlist step failed
+         */
+        case "/add-record-te":
+          console.log("Got request to add a record to Top Echelon")
+          if (request.method !== "POST") {
+            return new Response("Method not allowed", { status: 405 });
+          }
+
+          var input = await readJsonObject(request);
+          if (!input) {
+            return new Response("Body must be a JSON object", { status: 400 })
+          }
+
+          // Check the input has the correct fields
+          if (!input["properties"]){
+            return new Response("Record properties missing", { status: 400 })
+          }
+          if (!isPlainObject(input["properties"])){
+            return new Response("Record properties must be an object", { status: 400 })
+          }
+          var hotlistErrorAdd = checkHotlistField(input["hotlist"])
+          if (hotlistErrorAdd){
+            return new Response(hotlistErrorAdd, { status: 400 })
+          }
+
+          // Create the record
+          var accessTokenTE = await getAccessTokenTE(env, userId)
+          var resAddRecordTE = await addRecordTE(accessTokenTE, input["properties"])
+          if (resAddRecordTE["status"] !== 200){
+            return new Response(resAddRecordTE["message"], { status: 500 })
+          }
+          var newRecordId = resAddRecordTE["id"]
+
+          // Optionally add the new record to a hotlist
+          if (input["hotlist"]){
+            var resHotlistAdd = await addToHotlistTE(accessTokenTE, input["hotlist"], [newRecordId])
+            if (resHotlistAdd["status"] !== 200){
+              // The record exists by now, so report its id (retrying the request would create a duplicate)
+              return new Response(`Record added (id: ${newRecordId}) but could not be added to hotlist: ${resHotlistAdd["message"]}`, { status: 500 })
+            }
+          }
+
+          return new Response(JSON.stringify({
+            "message": "Record Added Successfully",
+            "id": newRecordId,
+            ...(input["hotlist"] ? { "hotlist": input["hotlist"] } : {}),
+          }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          })
+
+        /**
+         * Updates a person record in Top Echelon (mirrors /update-record-notion), optionally adding it to a hotlist.
+         * Input: { "record": <person id>, "properties": <person object>, "hotlist": optional hotlist name }
+         * Responses:
+         * - 200: record updated. JSON { message, id } (plus `hotlist` if it was added to one)
+         * - 400: invalid input
+         * - 405: invalid method
+         * - 500: error when updating the record, or the record was updated but the hotlist step failed
+         */
+        case "/update-record-te":
+          console.log("Got request to update a record in Top Echelon")
+          if (request.method !== "POST") {
+            return new Response("Method not allowed", { status: 405 });
+          }
+
+          var input = await readJsonObject(request);
+          if (!input) {
+            return new Response("Body must be a JSON object", { status: 400 })
+          }
+
+          // Check the input has the correct fields
+          if (!input["record"]){
+            return new Response("Record not specified", { status: 400 })
+          }
+          var recordIdTE = String(input["record"])
+          if (!RECORD_ID_PATTERN.test(recordIdTE)){
+            return new Response("Record id is malformed", { status: 400 })
+          }
+          if (!input["properties"]){
+            return new Response("Update properties missing", { status: 400 })
+          }
+          if (!isPlainObject(input["properties"])){
+            return new Response("Update properties must be an object", { status: 400 })
+          }
+          var hotlistErrorUpdate = checkHotlistField(input["hotlist"])
+          if (hotlistErrorUpdate){
+            return new Response(hotlistErrorUpdate, { status: 400 })
+          }
+
+          // Update the record (this function returns the bare HTTP status)
+          var accessTokenTE = await getAccessTokenTE(env, userId)
+          var resUpdateRecordTE = await updateRecordTE(accessTokenTE, recordIdTE, input["properties"])
+          if (resUpdateRecordTE !== 200){
+            return new Response(`Failed to update record (Top Echelon responded ${resUpdateRecordTE})`, { status: 500 })
+          }
+
+          // Optionally add the record to a hotlist
+          if (input["hotlist"]){
+            var resHotlistUpdate = await addToHotlistTE(accessTokenTE, input["hotlist"], [recordIdTE])
+            if (resHotlistUpdate["status"] !== 200){
+              return new Response(`Record updated but could not be added to hotlist: ${resHotlistUpdate["message"]}`, { status: 500 })
+            }
+          }
+
+          return new Response(JSON.stringify({
+            "message": "Record Updated Successfully",
+            "id": recordIdTE,
+            ...(input["hotlist"] ? { "hotlist": input["hotlist"] } : {}),
+          }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          })
 
         default:
           return new Response("Page not found", { status: 404 })

@@ -350,6 +350,137 @@ export async function addAttachmentTE(accessToken, personId, attachmentFile, att
     return resAttachment.status;
 }
 
+/**
+ * Gets every person record matching a `person_search` body, following pagination.
+ * Unlike `findRecordTE` it returns all matches, doesn't wait for a resume to finish
+ * parsing, and returns an empty list (status 200) when nothing matches.
+ * @param {string} accessToken 
+ * @param {Object} searchFilters 
+ * @param {string} sort_by 
+ * @param {string} sort_order 
+ * @param {number} maxPages - safety limit on the number of pages fetched
+ * @returns {Object} status object containing the matching records in `"results"`. 
+ *      `"truncated"` is `true` if `maxPages` stopped the search early.
+ */
+export async function getFilteredRecordsTE(accessToken, searchFilters, sort_by="date_added", sort_order="desc", maxPages=20){
+    var results = []
+    var currentPage = 1;
+    var totalPages = 1;
+    var retries = 0;
+
+    while (currentPage <= totalPages){
+        // Stop at the page limit rather than running into the Worker's request limits
+        if (currentPage > maxPages){
+            console.warn(`Stopped after ${maxPages} pages of results`)
+            return {
+                "status": 200,
+                "message": "Records found (stopped at the page limit)",
+                "results": results,
+                "truncated": true
+            }
+        }
+        // After 3 retries return an error
+        if (retries > 3){
+            console.error("Too many retries")
+            return {
+                "status": 429,
+                "message": "Too many retries"
+            }
+        }
+        const resPersonSearch = await fetch("https://bb3api.topechelon.com/public/v1/people/search", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${accessToken}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                "page": currentPage,
+                "sort_by": sort_by,
+                "sort_order": sort_order,
+                "person_search": searchFilters
+            })
+        })
+        // Handle response errors
+        if (resPersonSearch.status === 429) {
+            retries += 1;
+            const timer = retryTimer(resPersonSearch.headers.get("Retry-After"));
+            if (timer) {
+                await timer;
+            } else {
+                console.error("Retry timer broken or too long.")
+                return {
+                    "status": 429,
+                    "message": "Retry timer broken or too long"
+                }
+            }
+            continue;
+        } else if (resPersonSearch.status === 401) {
+            console.error("Authentication error")
+            return {
+                "status": 401,
+                "message": "Authentication error"
+            }
+        } else if (resPersonSearch.status !== 200) {
+            return {
+                "status": resPersonSearch.status,
+                "message": "Failed to search records"
+            }
+        }
+
+        const data = await resPersonSearch.json()
+        results = results.concat(data["entries"] ?? [])
+        totalPages = data["pagination"]?.["total_pages"] ?? 1
+        currentPage += 1;
+        retries = 0
+    }
+
+    return {
+        "status": 200,
+        "message": "Records found successfully",
+        "results": results
+    }
+}
+
+/**
+ * Creates a new person record in Top Echelon.
+ * @param {string} accessToken 
+ * @param {Object} personBody - the person's details, in the same format as `updateRecordTE`'s `updateBody`
+ * @returns {Object} status object containing the id of the new record in `"id"`
+ */
+export async function addRecordTE(accessToken, personBody){
+    const resPersonCreate = await fetch("https://bb3api.topechelon.com/public/v1/people", {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            "person": personBody
+        })
+    })
+    if (resPersonCreate.status !== 200 && resPersonCreate.status !== 201){
+        return {
+            "status": resPersonCreate.status,
+            "message": "Failed to create new record"
+        }
+    }
+    // The new record's id is needed to add it to a hotlist
+    const created = await resPersonCreate.json().catch(() => null)
+    const personId = created?.["person"]?.["id"] ?? created?.["id"]
+    if (!personId){
+        return {
+            "status": 500,
+            "message": "Record was created but its id could not be read from the response"
+        }
+    }
+
+    return {
+        "status": 200,
+        "message": "Record created successfully",
+        "id": personId
+    }
+}
+
 
 // ===========================================================Notion===========================================================
 
@@ -562,6 +693,7 @@ export async function uploadFileN(accessToken, file, filename, method){
  * @returns A status object of the action.
  */
 export async function addRecordN(accessToken, databaseId, properties){
+    
     const resNewRecord = await fetch(`https://api.notion.com/v1/pages`, {
         method: "POST",
         headers: {
@@ -579,6 +711,7 @@ export async function addRecordN(accessToken, databaseId, properties){
     })
     console.log(`Add record response: ${resNewRecord.status} ${resNewRecord.statusText}`)
     if (resNewRecord.status !== 200){
+        console.log(await resNewRecord.text())
         return {
             "status": resNewRecord.status,
             "message": "Failed to create new record"

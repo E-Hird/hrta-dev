@@ -159,7 +159,7 @@ describe("/track-new-database", () => {
 // =============================================================================
 describe("/query-notion", () => {
   const filter = { property: "Status", select: { equals: "New" } };
-  const sort = { property: "Created", direction: "descending" };
+  const sort = [{ property: "Created", direction: "descending" }];
   const input = { database: "clients", filter, sort };
   const queryUrl = `${N}/data_sources/ds-1/query`;
 
@@ -172,13 +172,13 @@ describe("/query-notion", () => {
     expect(await res.json()).toEqual([{ id: "a" }, { id: "b" }]);
   });
 
-  it("queries the tracked data source with the filter and a one-item sort list", async () => {
+  it("queries the tracked data source with the filter and the sort exactly as given", async () => {
     http.on("POST", queryUrl, [ok({ results: [], has_more: false })]);
 
     await post("/query-notion", input);
 
     const [c] = http.calls;
-    expect(jsonBody(c)).toMatchObject({ filter, sorts: [sort], page_size: 100, is_archived: false });
+    expect(jsonBody(c)).toMatchObject({ filter, sorts: sort, page_size: 100, is_archived: false });
     expectNotionAuth(c);
   });
 
