@@ -7,7 +7,7 @@
  */
 
 import { findDuplicatesTE } from "./admin.js";
-import { addToHotlistTE, getTrackedDatabasesN, trackNewDatabaseN, getDatabaseIdN, getFilteredRecordsN, getDatabaseSchemaN, uploadFileN, addRecordN, updateRecordN, getHotlistRecordsTE, getJobTE, addRecordTE, getFilteredRecordsTE, updateRecordTE } from "./database-actions.js"
+import { addToHotlistTE, getTrackedDatabasesN, trackNewDatabaseN, getDatabaseIdN, getFilteredRecordsN, getDatabaseSchemaN, uploadFileN, addRecordN, updateRecordN, getHotlistRecordsTE, getJobTE, addRecordTE, getFilteredRecordsTE, updateRecordTE, getHotlistContentsTE } from "./database-actions.js"
 import { getAccessTokenTE, newAccessTokenTE, getAccessTokenN, updateAccessTokenN } from "./authenticate.js";
 import { fractionalSubmission, advisorySubmission } from "./form.js";
 
@@ -863,6 +863,58 @@ export default {
           }), {
             status: 200,
             headers: { "Content-Type": "application/json" },
+          })
+
+        /**
+         * Gets the contents of a Top Echelon hotlist by name. Never creates the hotlist.
+         * Input: { "hotlist": <hotlist name>, "type": optional "person" (default) | "company" | "job" }
+         * Responses:
+         * - 200: JSON array of the hotlist's records (empty if the hotlist is empty).
+         *        Header `X-Results-Truncated: true` is added if Top Echelon reports further pages that were not returned.
+         * - 400: invalid input
+         * - 404: no hotlist with that name
+         * - 405: invalid method
+         * - 500: error while getting the hotlist
+         */
+        case "/get-hotlist-te":
+          console.log("Got request to get the contents of a Top Echelon hotlist")
+          if (request.method !== "POST") {
+            return new Response("Method not allowed", { status: 405 });
+          }
+
+          var input = await readJsonObject(request);
+          if (!input) {
+            return new Response("Body must be a JSON object", { status: 400 })
+          }
+
+          // Check the input has the correct fields
+          if (!input["hotlist"]){
+            return new Response("Hotlist not specified", { status: 400 })
+          }
+          if (typeof input["hotlist"] !== "string" || !input["hotlist"].trim()){
+            return new Response("Hotlist must be a non-empty string", { status: 400 })
+          }
+          var hotlistType = input["type"] ?? "person"
+          if (!["person", "company", "job"].includes(hotlistType)){
+            return new Response("type must be 'person', 'company' or 'job'", { status: 400 })
+          }
+
+          // Get the hotlist's records
+          var accessTokenTE = await getAccessTokenTE(env, userId)
+          var resHotlistContents = await getHotlistContentsTE(accessTokenTE, input["hotlist"], hotlistType)
+          if (resHotlistContents["status"] === 404){
+            return new Response(resHotlistContents["message"], { status: 404 })
+          }
+          if (resHotlistContents["status"] !== 200){
+            return new Response(resHotlistContents["message"], { status: 500 })
+          }
+
+          return new Response(JSON.stringify(resHotlistContents["results"]), {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json",
+              ...(resHotlistContents["truncated"] ? { "X-Results-Truncated": "true" } : {}),
+            },
           })
 
         default:

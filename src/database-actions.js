@@ -5,7 +5,8 @@
  * Functions that are for Top Echelon end TE and functions for Notion end in N.
  * List of the functionalities included are:
  *      Top Echelon: 
- *          # Hotlist: Getting Hotlist ID, Adding records to a Hotlist, Getting hotlist records
+ *          # Hotlist: Getting Hotlist ID, Adding records to a Hotlist, Getting hotlist records,
+ *              Getting a hotlist's contents without creating it
  *          # Person Records: Searching for a Person Record, Parsing a resume to create/update a person record, 
  *              Updating a person record, Adding attachments to a person record
  * 
@@ -189,6 +190,120 @@ export async function getHotlistRecordsTE(accessToken, hotlist, type="person"){
         "status": 200,
         "message": "Found Hotlist records",
         "results": results
+    }
+}
+
+/**
+ * Finds the id of a hotlist by its exact name. Unlike `getHotlistIdTE` this never creates the hotlist,
+ * so it is safe to use for read-only requests.
+ * @param {string} accessToken 
+ * @param {string} hotlist - the hotlist's name (matched exactly; case is ignored only if no exact-case match exists)
+ * @param {string} type - "person", "company" or "job"
+ * @returns {Object} status object containing the hotlist's id in `"id"`. Status 404 if there is no such hotlist.
+ */
+async function findHotlistIdTE(accessToken, hotlist, type="person"){
+    const resHotlistSearch = await fetch(`https://bb3api.topechelon.com/public/v1/hotlists?record_type=${encodeURIComponent(type)}&name=${encodeURIComponent(hotlist)}&page=1`, {
+        method: "GET",
+        headers: { "Authorization": `Bearer ${accessToken}` }
+    })
+    if (resHotlistSearch.status === 401){
+        console.error("Authentication error")
+        return {
+            "status": 401,
+            "message": "Authentication error"
+        }
+    }
+    if (resHotlistSearch.status !== 200){
+        console.error(`Hotlist ${hotlist} could not be searched.`)
+        return {
+            "status": resHotlistSearch.status,
+            "message": "Failed to search for hotlist"
+        }
+    }
+
+    // The name filter may also return hotlists that only partly match, so pick the exact one
+    const matches = (await resHotlistSearch.json())["results"] ?? []
+    const wanted = hotlist.trim().toLowerCase()
+    const found = matches.find(h => h["name"] === hotlist)
+        ?? matches.find(h => typeof h["name"] === "string" && h["name"].trim().toLowerCase() === wanted)
+    if (!found || !found["id"]){
+        return {
+            "status": 404,
+            "message": "Hotlist not found"
+        }
+    }
+
+    return {
+        "status": 200,
+        "message": "Hotlist found",
+        "id": found["id"]
+    }
+}
+
+/**
+ * Gets every record in the hotlist called `hotlist`, without creating the hotlist if it is missing.
+ * Unlike `getHotlistRecordsTE` an empty hotlist is a success (empty list), not a 404.
+ * @param {string} accessToken 
+ * @param {string} hotlist 
+ * @param {string} type - "person", "company" or "job"
+ * @returns {Object} status object containing the hotlist's records in `"results"`.
+ *      `"truncated"` is `true` if Top Echelon reports there are further pages that were not returned.
+ */
+export async function getHotlistContentsTE(accessToken, hotlist, type="person"){
+    const resHotlist = await findHotlistIdTE(accessToken, hotlist, type)
+    if (resHotlist["status"] !== 200){
+        return resHotlist
+    }
+    const hotlistID = resHotlist["id"]
+
+    var retries = 0;
+    while (true){
+        // After 3 retries return an error
+        if (retries > 3){
+            console.error("Too many retries")
+            return {
+                "status": 429,
+                "message": "Too many retries"
+            }
+        }
+        const resGetHotlistRecords = await fetch(`https://bb3api.topechelon.com/public/v1/hotlists/${hotlistID}/all_records`, {
+            method: "GET",
+            headers: { "Authorization": `Bearer ${accessToken}` }
+        })
+        // Handle response errors
+        if (resGetHotlistRecords.status === 429){
+            retries += 1;
+            const timer = retryTimer(resGetHotlistRecords.headers.get("Retry-After"));
+            if (timer){
+                await timer;
+            } else {
+                console.error("Retry timer broken or too long.")
+                return {
+                    "status": 429,
+                    "message": "Retry timer broken or too long"
+                }
+            }
+            continue;
+        } else if (resGetHotlistRecords.status === 401){
+            console.error("Authentication error")
+            return {
+                "status": 401,
+                "message": "Authentication error"
+            }
+        } else if (resGetHotlistRecords.status !== 200){
+            return {
+                "status": resGetHotlistRecords.status,
+                "message": "Failed to collect Hotlist records"
+            }
+        }
+
+        const data = await resGetHotlistRecords.json()
+        return {
+            "status": 200,
+            "message": "Found Hotlist records",
+            "results": data["entries"] ?? [],
+            "truncated": data["pagination"]?.["is_last_page"] === false
+        }
     }
 }
 
